@@ -225,7 +225,6 @@ input[type=checkbox]{
 </style>
 <script type="text/javascript" src="/resources/js/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-<!-- <script type="text/javascript" src="/resources/js/commonFunction.js"></script> -->
 <script type="text/javascript">
 // 전역 변수
 var mberId = "${USER_INFO.mberId}";
@@ -271,12 +270,10 @@ $(function(){
 	var soc = new SockJS("<c:url value="/alram"/>");
 	
 	soc.onopen = function () {
-        console.log('주희 Info: connection opened.');
+        console.log('Info: connection opened.');
     };
     
 	soc.onmessage = function(data) {
-		console.log("data", data);
-		
 		var str = "";
 		str += "<div class='review-item-rating' style='margin-right: 15px;'>";
 		str += elapsedTime(data.timeStamp);
@@ -372,7 +369,6 @@ const enterMypage = function(){
 				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
 			},
 			success:function(res){
-				console.log(res);
 				if(res === "true"){
 					if(isStudent()){
 						window.location.href = "/student/mypage";
@@ -447,8 +443,6 @@ const headerEnterClass = function(){
 			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
 		},
 		success:function(clasCode){
-			console.log("clasCode -> " + clasCode);
-			
 			// 소속된 클래스가 있는 경우
 			if(clasCode != null && clasCode != ""){
 				var cmmnSchulPsitnSttus = "${SCHOOL_USER_INFO.cmmnSchulPsitnSttus}";
@@ -485,12 +479,8 @@ const headerEnterClass = function(){
 			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
 		},
 		success:function(res){
-			console.log("자녀 리스트", res);
-	
 			var str = "";
 			var clasCode = ""; 		// 학생, 교사의 클래스 코드
-// 			var clasCodeArr = []; 	// 학부모 자녀의 클래스 코드들
-			console.log("res",  res);
 			
 			$.each(res, function(index, schulVOList){
 				var item = schulVOList.schulVOList[0];
@@ -502,7 +492,8 @@ const headerEnterClass = function(){
 				str += "<p>"+item.clasVO.clasNm+"</p>"
 				str += "<p>"+item.clasVO.clasCode+"</p>"
 				str += "</div>";
-				str += "<input type='button' onclick='goToClass(\"" + item.clasVO.clasCode + "\", \"" + schulVOList.stdntId + "\")' class='btn btn-primary waves-effect waves-light' value='이동하기'>";
+				str += "<input type='button' onclick='goToClass(\"" + item.clasVO.clasCode + "\", \"";
+				str += "schulVOList.stdntId + "\")' class='btn btn-primary waves-effect waves-light' value='이동하기'>";
 				str += "</div></div>";
 				
 				$("#clasCode1").val(item.clasVO.clasCode);
@@ -537,8 +528,6 @@ function getAllNotice(){
 			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
 		},
 		success:function(res){
-			console.log("알림", res);
-			
 			noticeLength = res.length;
 			var str = "";
 			var notReadingCount = 0; // 읽지 않은 알림의 수
@@ -550,10 +539,11 @@ function getAllNotice(){
 			});
 			
 			// 알림이 없는 경우
-			if(res.length == 0){
+			if(noticeLength == 0){
 				$(".noticeDelDiv").attr("style", "display: none;");
 				$(".noticeContainer").attr("style", "min-height: 254px;");
 				$(".indicator-nt").attr("style", "display: none;");
+				
 				str += "<div>";
 				str += "<p style='text-align: center; color: #999;'>모든 알림을 확인했습니다.</p>";
 				str += "</div>";
