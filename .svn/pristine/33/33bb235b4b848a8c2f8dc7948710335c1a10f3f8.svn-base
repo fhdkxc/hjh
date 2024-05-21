@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.common.mapper.HeaderMapper">
+	<resultMap type="noticeVO" id="noticeMap">
+		<result property="noticeRcvId" column="NOTICE_RCV_ID"/>
+		<result property="noticeSndId" column="NOTICE_SND_ID"/>
+		<result property="schulCode" column="SCHUL_CODE"/>
+		<result property="noticeTrnsmitResveDt" column="NOTICE_TRNSMIT_RESVE_DT"/>
+		<result property="noticeReadngDt" column="NOTICE_READNG_DT"/>
+		<result property="noticeTrnsmitDt" column="NOTICE_TRNSMIT_DT"/>
+		<result property="cmmnNoticeReadngAt" column="CMMN_NOTICE_READNG_AT"/>
+		<result property="noticeCn" column="NOTICE_CN"/>
+		<result property="noticeSj" column="NOTICE_SJ"/>
+		<result property="noticeCode" column="NOTICE_CODE"/>
+		<result property="cmmnBoardSe" column="CMMN_BOARD_SE"/>
+		<association property="taskVO" resultMap="taskMap"></association>
+	</resultMap>
+	
+	<resultMap type="taskVO" id="taskMap">
+		<result property="taskCode" column="TASK_CODE"/>
+		<result property="taskSj" column="TASK_SJ"/>
+		<result property="taskCn" column="TASK_CN"/>
+		<result property="taskBeginDt" column="TASK_BEGIN_DT"/>
+		<result property="taskEndDt" column="TASK_END_DT"/>
+		<result property="taskCnt" column="TASK_CNT"/>
+		<result property="atchFileCode" column="ATCH_FILE_CODE"/>
+		<result property="clasCode" column="CLAS_CODE"/>
+	</resultMap>
+
+	<!-- (학생) 현재 소속된 클래스 코드 찾기 -->
+	<select id="getStudentClasCode" parameterType="String" resultType="String">
+		    SELECT 	C.CLAS_CODE
+		      FROM  CLAS C
+		INNER JOIN 	CLAS_STDNT CS
+		        ON 	C.CLAS_CODE = CS.CLAS_CODE
+		INNER JOIN 	SCHUL S
+		        ON 	S.SCHUL_CODE = C.SCHUL_CODE
+		INNER JOIN 	SCHUL_PSITN_MBER SPM
+		        ON 	SPM.SCHUL_CODE = S.SCHUL_CODE
+		       AND  SPM.MBER_ID = CS.MBER_ID
+		     WHERE  1=1
+		       AND	CS.MBER_ID = #{mberId}
+		       AND  SPM.CMMN_SCHUL_PSITN_STTUS = 'A02101' <!-- '재학' -->
+	</select>
+	
+	<!-- (교사) 현재 운영 중인 클래스 코드 찾기 -->
+	<select id="getTeacherClasCode" parameterType="String" resultType="String">
+		SELECT  H.CLAS_CODE
+		FROM    HRTCHR H, CLAS C
+		WHERE   1=1
+		AND     H.MBER_ID = #{mberId}
+		AND     H.CLAS_CODE = C.CLAS_CODE
+		AND     FN_CMMN_CODE_TO_NM(C.CMMN_CLAS_STTUS) = '운영'
+	</select>
+	
+	<!-- 로그인 한 아이디의 모든 알림 정보 출력 -->
+	<select id="getAllNotice" parameterType="String" resultMap="noticeMap">
+		SELECT      NOTICE_CODE, NOTICE_SJ, NOTICE_CN, CMMN_NOTICE_READNG_AT,
+		            NOTICE_TRNSMIT_DT, NOTICE_READNG_DT,
+		            NOTICE_SND_ID, NOTICE_RCV_ID, CMMN_BOARD_SE,
+		            T.TASK_CODE
+		FROM        NOTICE, TASK T
+		WHERE       NOTICE_RCV_ID = #{noticeRcvId}
+		AND         T.TASK_SJ LIKE '%' || TRIM(SUBSTR(NOTICE_SJ, 6)) || '%'
+		ORDER BY    NOTICE_TRNSMIT_DT DESC
+	</select>
+</mapper>

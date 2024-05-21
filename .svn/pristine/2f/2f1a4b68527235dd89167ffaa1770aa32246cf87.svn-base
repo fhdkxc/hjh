@@ -1,0 +1,20 @@
+package kr.or.ddit.classroom.service;
+
+import javax.servlet.http.HttpServletRequest;
+
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.DiarySearchVO;
+import kr.or.ddit.vo.NttVO;
+
+public interface DiaryService {
+
+	// 일기장  쓰기에서 날씨를 불러오기위해 학교가 소속된 지역을 가져오는 메서드
+	public String getSchulArea(String schulCode);
+
+	// 일기장 등록
+	public int addDiaryAct(HttpServletRequest request, NttVO nttVO);
+
+	// 일기장 목록 불러오기
+	public ArticlePage<NttVO> getDiaryList(DiarySearchVO diarySearchVO);
+
+}

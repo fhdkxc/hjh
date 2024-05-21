@@ -1,0 +1,19 @@
+package kr.or.ddit.dclz.service;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.DclzVO;
+
+public interface DclzService {
+
+	public int insertDclz(String clasStdntCode);
+
+	public List<DclzVO> getAllDclz(HttpServletRequest request);
+
+	public int insertStdDclz(HttpServletRequest request);
+
+	public List<ClasStdntVO> getAllClasStd(HttpServletRequest request);
+}

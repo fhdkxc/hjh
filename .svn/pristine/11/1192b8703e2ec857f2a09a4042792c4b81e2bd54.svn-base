@@ -1,0 +1,19 @@
+package kr.or.ddit.classroom.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/diary")
+@Controller
+public class DiaryController {
+	
+	@GetMapping("/goToDiaryList")
+	public String goToDiaryList() {
+		return "/class/diary/getDiaryList";
+	}
+	
+}

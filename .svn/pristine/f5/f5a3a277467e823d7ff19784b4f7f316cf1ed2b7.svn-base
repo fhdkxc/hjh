@@ -1,0 +1,377 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<style>
+#ntcnTitle h3{
+font-size: 2.2rem;
+text-align: center;
+backdrop-filter: blur(4px);
+background-color: rgba(255, 255, 255, 1);
+border-radius: 50px;
+box-shadow: 35px 35px 68px 0px rgba(145, 192, 255, 0.5), inset -8px -8px 16px 0px rgba(145, 192, 255, 0.6), inset 0px 11px 28px 0px rgb(255, 255, 255);
+width: 370px;
+padding-top: 35px;
+padding-bottom: 35px;
+margin: auto;
+margin-bottom: 40px;
+}
+</style>
+<style>
+#ntcnSj{
+	width:95%;
+	border:none;
+	background: none;
+	height: 50px;
+	font-size: 1.4rem;
+	display: inline-block;
+	vertical-align: middle;
+	margin-bottom:6px;
+}
+
+.ntcnImg{
+	width: 300px;
+	height: 300px;
+	object-fit: cover;
+}
+
+#ntcnTitle{
+	min-height: 255px;
+}
+
+#ntcnContainer{
+	min-height: 255px;
+}
+
+#ntcnContainer .custom-pagination{
+	max-width:302px;
+	margin: auto;
+}
+#ntcnContainer .custom-pagination .pagination {
+	 width: max-content;
+}
+.searchForm{
+	height: 40px;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	padding: 15px 20px;
+}
+
+#searchBtn,#insertBtn{
+	background: #333;
+	height: 40px;
+	border: none;
+	padding: 10px 15px;
+	border-radius: 10px;
+	font-family: 'Pretendard' !important;
+	font-weight: 600;
+	color: #fff;
+}
+#searchBtn:hover, #insertBtn:hover{
+	background: #ffd77a;
+	color:#333;
+	transition:all 1s;
+	font-weight: 700;
+}
+#updateBtn{
+	border: none;
+	color: #fff;
+	border-radius: 10px;
+	padding: 5px 5px;
+}
+
+#insertBtn, #updateBtn{
+	background: #006DF0;
+}
+
+#searchCondition{
+	height: 40px;
+	border: 1px solid #ddd;
+	border-radius: 5px;
+	padding-left: 10px;
+}
+
+.custom-datatable-overright table tbody tr.none-tr td:hover{
+	background: #fff!imporant;
+}
+
+.ntcnAll{
+	width: 1400px;
+	margin: auto;
+	backdrop-filter: blur(10px);
+	background-color: rgba(255, 255, 255, 1);
+	border-radius: 50px;
+	box-shadow: 0px 35px 68px 0px rgba(145, 192, 255, 0.5), inset 0px -6px 16px 0px rgba(145, 192, 255, 0.6), inset 0px 11px 28px 0px rgb(255, 255, 255);
+	padding: 50px 80px;
+	margin-bottom:50px;
+	min-height:530px;"
+}
+
+.ntcnAll .ntcn-cont{
+	border: 1px solid #ddd;
+	border-radius: 10px;
+	padding: 10px 20px;
+	min-height: 83px;
+	margin-top: 20px;
+}
+.ntcnAll .ntcnTit {
+	display: flex;
+	justify-content: space-between;
+	position:relative;
+}
+
+.ntcnAll .title{
+	font-size: 1.8rem;
+	font-weight: 700;
+	margin-top: 6px;
+
+}
+.ntcnInfo {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 10px;
+	padding-left: 10px;
+	font-size: 1rem;
+}
+
+#ntcnArea{
+	resize: none;
+	height: auto;
+	border: none;
+}
+
+.modal-content{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+</style>
+<script type="text/javascript" src="/resources/js/commonFunction.js"></script>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript">
+//전역 변수
+var keyword = "${keyword}";
+var clasCode = "${CLASS_INFO.clasCode}";
+var currentPage = "${currentPage}";
+var total = "${total}";
+
+let isLoading = false;
+
+$(function(){
+// 	console.log("${ntcnVOList}");
+// 	console.log("${atchFileVOList}");
+	if(currentPage = "") currentPage = "1";
+	
+	$(window).on("scroll", function(){
+		let scrollTop = $(window).scrollTop(); // 스크롤 된 길이
+		let windowHeight = $(window).height(); // 웹 브라우저의 창의 높이
+		let documentHeight = $(document).height(); // 문서 전체의 높이
+		let isBottom = scrollTop + windowHeight + 10 >= documentHeight; // 바닥까지 스크롤 되었는지 여부
+		
+		if(isBottom){
+			// 현재 마지막 페이지일 경우,
+			if(currentPage == ${total} || isLoading){
+				return;
+			}
+			
+			isLoading = true;
+			currentPage = parseInt(currentPage);
+			currentPage++;
+		}
+	});
+	
+	// 알림장 목록 불러오기
+// 	$.ajax({
+// 		url:"/ntcn/ntcnList",
+// 		contentType:"application/json;charset=utf-8",
+// 		data:JSON.stringify(data),
+// 		type:"post",
+// 		dataType:"json",
+// 		beforeSend:function(xhr){
+// 			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+// 		},
+// 		success: function(res){
+// // 			alert("리스트 불러오기 성공~");
+// 			console.log("ntcnList", res);
+			
+// 			var str = "";
+			
+// 			$.each(res, function(idx, ntcnVO){
+// 				str += "<div class='ntcnAll'><div><div class='ntcnTit'>";
+// 				str += "<input type='text' class='form-control input-sm' name='ntcnSj' id='ntcnSj' value='"+ntcnVO.ntcnSj+"' readonly>";
+// 				str += "<img src='/resources/images/classRoom/freeBrd/line.png' style='position: absolute;left: 0px;top: 10px;z-index: -1;'>";
+// 				str += "</div><div class='ntcnInfo'>";
+// 				str += "<span>작성자: "+ntcnVO.hrtchrVO.mberNm+"</span>";
+// 				str += "<span>작성일: "+dateFormat(ntcnVO.ntcnWritngDt)+"</span>";
+// // 				str += "<span>조회수: "+ntcnVO.ntcnCnt+"</span>";
+// 				str += "</div></div>";
+// 				str += "<div class='form-group res-mg-t-15'>";
+// 				str += "<div class='ntcn-cont'>";
+// 				str += "<div id='smarteditor'>";
+// 				str += "<div id='ntcnCn' style='width:100%;' style='border:1px solid #ddd;'>";
+// 				str += "<textarea id='ntcnArea' name='ntcnArea' readonly>"+ntcnVO.ntcnCn+"</textarea>";
+				
+// 				// 첨부파일이 있는 경우 첨부파일 리스트 출력
+// 				if(ntcnVO.atchFileCode != null){
+// // 					str += "<span>: "+ntcnVO.ntcnCode+"</span>";
+// // 					var ntcnCode = ntcnVO.ntcnCode;
+					
+// 					$.ajax({
+// 						url:"/ntcn/atchFileList",
+// 						type: "post",
+// 						data: {ntcnCode:ntcnVO.ntcnCode},
+// 						beforeSend:function(xhr){
+// 							xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+// 						},
+// 						success: function(res){
+// 							console.log("첨부파일리스트", res);
+							
+// 							$.each(res, function(idx, item){
+// 								console.log(item.atchFileCours);
+// // 								var test = "<img alt='알림장 이미지' src='/upload/ntcn/"+item.atchFileCours+"'>";
+// // 								console.log(test);
+// 								str += "<img alt='알림장 이미지' src='/upload/ntcn/" + item.atchFileCours + "'>";
+// 							});
+// 						}
+// 					});
+// 				}
+// 				str += "</div></div></div></div></div>";
+// 			});
+// 			$("#ntcnContainer").html(str);
+// 		}
+// 	});
+
+	// 알림 등록
+	$("#insertBtn").on("click", function(){
+		location.href = "/ntcn/ntcnInsertForm?clasCode="+clasCode;
+	});
+	
+	// 알림장 이미지 크게 보기
+	$(".ntcnImg").on("click", function(){
+		$("#ntcnImgViewer").modal("show");
+		
+		var atchFileCode = $(this).attr("data-atchFileCode");
+		var atchFileCours = $(this).attr("data-atchFileCours");
+
+		var imgTag = $("<img>").attr("src", "/upload/ntcn/"+atchFileCours);
+		$("#ntcnImgContainer").html(imgTag);
+	});
+	
+// 	$("#updateBtn").on("click", function(){
+// 		$("#goNtcnUpdateForm").submit();
+// 	});
+})
+</script>
+<div id="ntcnTitle">
+	<div class="sparkline13-list">
+		<h3>
+			<img src="/resources/images/classRoom/notice/noticeContent.png" style="width:50px; margin-bottom: 5px; display:inline-block; vertical-align:middel;">
+				알림장
+			<img src="/resources/images/classRoom/notice/star.png" style="width:40px; margin-bottom: 10px; display:inline-block; vertical-align:middel;">		
+		</h3>
+		<div class="sparkline13-graph">
+			<div class="datatable-dashv1-list custom-datatable-overright">
+				<div class="bootstrap-table">
+					<div class="fixed-table-toolbar">
+						<div class="pull-left button">
+							<button type="button" id="insertBtn">알림 등록</button>
+							<button type="button" onclick="location.href='/ntcn/ntcnList?clasCode=${CLASS_INFO.clasCode}'">알림 목록</button>
+						</div>
+						<div class="pull-right search" style="margin-bottom: 20px;">
+							<form action="/ntcn/ntcnList?clasCode=${CLASS_INFO.clasCode}" method="get">
+								<input class="searchForm" type="text" placeholder="" id="keyword" name="keyword" value="${keyword}">
+								<input class="searchForm" type="hidden" name="clasCode" value="${CLASS_INFO.clasCode}">
+								<button type="submit" id="searchBtn">검색</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div id="ntcnContainer">
+    <c:choose>
+        <c:when test="${fn:length(ntcnVOList) > 0}">
+            <c:forEach var="ntchVO" items="${ntcnVOList}" varStatus="status">
+            	<form id="goNtcnUpdateForm" action="/ntcn/ntcnUpdateForm?clasCode=${CLASS_INFO.clasCode}" method="post">
+                <div class="ntcnAll">
+                    <div>
+                    	<!-- 담임 교사만 수정 권한 부여 -->
+                    	<c:if test="${USER_INFO.vwMemberAuthVOList[0].cmmnDetailCode == 'ROLE_A14002'}">
+	                    	<div style="display: flex; justify-content: flex-end;">
+	                    		<input type="submit" id="updateBtn" value="수정">
+	                    	</div>
+                    	</c:if>
+                        <div class="ntcnTit">
+                            <input type="text" class="form-control input-sm" name="ntcnSj" id="ntcnSj" value="${ntchVO.ntcnSj}" readonly>
+                            <img src="/resources/images/classRoom/freeBrd/line.png" style="position: absolute;left: 0px;top: 10px;z-index: -1;">
+                        </div>
+                        <div class="ntcnInfo">
+                            <span>작성자: <input type="text" class="form-control input-sm" name="ntcnSj" id="ntcnSj" value="${ntchVO.hrtchrVO.mberNm}" readonly></span>
+                            <span>작성일: <fmt:formatDate value="${ntchVO.ntcnWritngDt}" pattern="yyyy-MM-dd" /></span>
+                        </div>
+                    </div>
+                    <div class="form-group res-mg-t-15">
+                        <div class="ntcn-cont">
+                            <div id="smarteditor">
+                                <div id="ntcnCn" style="width:100%;" style="border:1px solid #ddd;">
+                                    <textarea id="ntcnArea" name="ntcnArea" readonly>${ntchVO.ntcnCn}</textarea>
+                                    <div id="imgDiv">
+                                        <c:if test="${ntchVO.atchFileCode != null}">
+                                            <c:forEach var="atchFileVO" items="${atchFileVOList}" varStatus="status">
+                                                <c:if test="${ntchVO.atchFileCode == atchFileVO.atchFileCode}">
+<%--                                                     <a href="/upload/ntcn/${atchFileVO.atchFileCours}"> --%>
+                                                    	<img class="ntcnImg" src="/upload/ntcn/${atchFileVO.atchFileCours}" alt="알림장 이미지"
+                                                    		data-atchFileCode="${atchFileVO.atchFileCode}"
+                                                    		data-atchFileCours="${atchFileVO.atchFileCours}">
+<!--                                                     </a> -->
+                                                	<input type="hidden" class="cours" value="${atchFileVO.atchFileCours}">
+                                                	<input type="hidden" name="atchFileCode" value="${ntchVO.atchFileCode}">
+                                                </c:if>
+                                            </c:forEach>
+                                        </c:if>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <sec:csrfInput />
+                </form>
+            </c:forEach>
+        </c:when>
+        <c:otherwise>
+	        <div class="ntcnAll">
+				<h4 style="text-align: center">
+				<c:choose>
+					<c:when test="${keyword != ''}">검색 결과가 없습니다.</c:when>
+					<c:otherwise>등록된 글이 없습니다.</c:otherwise>
+				</c:choose>
+				</h4>
+			</div>
+        </c:otherwise>
+        
+    </c:choose>
+</div>
+
+<div id="ntcnImgViewer" class="modal modal-edu-general" role="dialog" >
+	<div class="modal-content" style="width: 1200px; height: 900px;">
+		<div class="modal-close-area modal-close-df">
+			<a class="close" data-dismiss="modal" href="#">
+			<i class="fa fa-close"></i></a>
+		</div>
+		<div class="modal-body" style="padding: 0px;">
+			<div>
+				<h2>이미지 보기</h2>
+			</div>
+			<br>
+			<div id="ntcnImgContainer">
+			
+			</div>
+		</div>
+	</div>
+</div>

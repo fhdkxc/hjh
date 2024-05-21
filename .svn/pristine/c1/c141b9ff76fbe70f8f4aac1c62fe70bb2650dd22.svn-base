@@ -1,0 +1,318 @@
+package kr.or.ddit.employee.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.employee.service.EmployeeService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.SchulPsitnMberVO;
+import kr.or.ddit.vo.SchulVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/employee")
+@Controller
+public class EmployeeController {
+
+	@Autowired
+	EmployeeService employeeService;
+
+	// 직원 마이페이지
+	@GetMapping("/mypage")
+	public String mypage() {
+		return "employee/mypage";
+	}
+
+	// 교직원 리스트
+	/*
+	 * 요청URI : /employee/employeeList?schulCode=7581092 요청파라미터 : schulCode = 7581092
+	 * 요청방식 : get
+	 */
+	@GetMapping("/employeeList")
+	public String employeeList(Model model, Map<String, Object> map, HttpServletRequest request,
+			@RequestParam(value = "schulCode", required = true) String schulCode,
+			@RequestParam(value = "currentPage", required = true, defaultValue = "1") int currentPage) {
+
+		map.put("schulCode", schulCode);
+		map.put("currentPage", currentPage);
+		log.info("employeeList->map : " + map);
+
+		List<SchulVO> schoolEmployeeVOList = this.employeeService.employeeList(map);
+		log.info("employeeList->schoolEmployeeVOList : " + schoolEmployeeVOList);
+
+		model.addAttribute("schoolEmployeeVOList", schoolEmployeeVOList);
+
+		return "employee/employeeList";
+	}
+
+	/*
+	 * 요청URI : /employee/employeeListAjax? 요청파라미터(json) :
+	 * {"schulCode":7581092,"keyword":"신용","currentPage":3} 요청방식 : post
+	 * 
+	 * 골뱅이ResponseBody : object -> string 으로 변환하는 방식을 serialize required=false :
+	 * 선택(map에 아무것도 들어오지 않아도 괜찮다)
+	 */
+	@ResponseBody
+	@PostMapping("/employeeListAjax")
+	public ArticlePage<SchulVO> employeeListAjax(@RequestBody(required = true) Map<String, Object> map) {
+		// 키값 설정
+		log.info("employeeListAjax->map : " + map);
+		String schulCode = (String) map.get("schulCode");
+		log.info("employeeList->schulCode : " + schulCode);
+
+		List<SchulVO> schoolEmployeeVOList = this.employeeService.employeeList(map);
+		log.info("employeeList->schoolEmployeeVOList : " + schoolEmployeeVOList);
+
+		int size = 10;
+
+		String currentPage = map.get("currentPage").toString();
+
+		String keyword = "";
+		if (map.get("keyword") == null) {
+			keyword = "";
+		} else {
+			keyword = map.get("keyword").toString();
+		}
+		log.info("employeeListAjax->keyword : " + keyword);
+
+		// 데이터 총 갯수 가져오기
+		int total = this.employeeService.getEmployeeTotal(map);
+		log.info("employeeListAjax->total : " + total);
+
+		ArticlePage<SchulVO> data = new ArticlePage<SchulVO>(total, Integer.parseInt(currentPage), size,
+				schoolEmployeeVOList, keyword, schulCode);
+		String url = "/employee/employeeList";
+		data.setUrl(url);
+
+		log.info("employeeList->data : " + data);
+
+		return data;
+	}
+
+	/**
+	 * 요청URI : /employee/employeeDetail?mberId=758109210011 요청파라미터 :
+	 * {mberId=758109210011} 요청방식 : get
+	 */
+	// 교직원 상세
+	@GetMapping("/employeeDetail")
+	public String employeeDetail(@RequestParam(value = "schulCode", required = true) String schulCode, @RequestParam(value = "mberId", required = true) String mberId, Model model) {
+		log.info("employeeDetail->schulCode : " + schulCode);
+		log.info("employeeDetail->mberId : " + mberId);
+		
+		Map<String,Object> map = new HashMap<String, Object>();
+		map.put("schulCode", schulCode);
+		map.put("mberId", mberId);
+		
+		SchulVO schulVO = this.employeeService.employeeDetail(map);
+		log.info("employeeDetail->schulVO" + schulVO);
+
+		model.addAttribute("schulVO", schulVO);
+		return "employee/employeeDetail";
+	}
+
+	// 교직원 등록
+	@GetMapping("/employeeCreate")
+	public String employeeCreate() {
+		return "employee/employeeCreate";
+	}
+
+	@ResponseBody
+	@PostMapping("/employeeCreateAjax")
+	public int employeeCreateAjax(MemberVO memberVO, SchulPsitnMberVO schulPsitnMberVO, MultipartFile uploadFile) {
+
+		log.info("employeeCreateAjax->memberVO : " + memberVO);
+		log.info("employeeCreateAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+		int result = this.employeeService.insertMember(memberVO, uploadFile);
+		result += this.employeeService.insertSchoolMember(schulPsitnMberVO);
+		log.info("employeeCreateAjax->result : " + result);
+
+		return result;
+	}
+
+	// 회원가입 아이디 중복체크
+	@ResponseBody
+	@PostMapping("/idDupChk")
+	public int idDupChk(@RequestBody MemberVO memberVO) {
+		log.info("중복체크 memberVO-> " + memberVO.getMberId());
+		int result = employeeService.idDupChk(memberVO);
+		log.info("DB다녀와서 vo -> " + memberVO);
+
+		return result;
+	}
+
+	// 교직원 수정
+	@ResponseBody
+	@PostMapping("/employeeUpdateAjax")
+	public int employeeUpdateAjax(MemberVO memberVO, SchulPsitnMberVO schulPsitnMberVO, MultipartFile uploadFile) {
+		
+		log.info("employeeUpdateAjax->memberVO : " + memberVO);
+		log.info("employeeUpdateAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+
+		int result = this.employeeService.updateMember(memberVO, uploadFile);
+		result += this.employeeService.updateEmployeeSchulPsitnMber(schulPsitnMberVO);
+		log.info("employeeUpdateAjax->result " + result);
+		
+		return result;
+	}
+
+//	// 교직원 삭제
+//	@ResponseBody
+//	@PostMapping("/employeeDeleteAjax")
+//	public int employeeDeleteAjax(@RequestBody SchulPsitnMberVO schulPsitnMberVO) {
+//		log.info("employeeDeleteAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+//
+//		String mberId = schulPsitnMberVO.getMberId();
+//
+//		log.info("schulPsitnMberVO-> " + schulPsitnMberVO);
+//
+//		int result = this.employeeService.employeeDeleteAjax(mberId);
+//
+//		log.info("employeeDeleteAjax->result : " + result);
+//
+//		return result;
+//	}
+	
+	// 학생 리스트
+	/*
+	 * 요청URI : /employee/employeeList?schulCode=7581092 요청파라미터 : schulCode = 7581092
+	 * 요청방식 : get
+	 */
+	@GetMapping("/studentList")
+	public String studentList(Model model, Map<String, Object> map, 
+			@RequestParam(value = "schulCode", required = false) String schulCode,
+			@RequestParam(value = "currentPage", required = false, defaultValue = "1") int currentPage) {
+
+		map.put("schulCode", schulCode);
+		map.put("currentPage", currentPage);
+		log.info("studentList->map : " + map);
+
+		List<SchulVO> schoolStudentVOList = this.employeeService.studentList(map);
+		log.info("studentList->schoolStudentVOList : " + schoolStudentVOList);
+
+		model.addAttribute("schoolStudentVOList", schoolStudentVOList);
+
+		return "employee/studentList";
+	}
+	
+	@ResponseBody
+	@PostMapping("/studentListAjax")
+	public ArticlePage<SchulVO> studentListAjax(@RequestBody(required = false) Map<String, Object> map) {
+		// 키값 설정
+		log.info("studentListAjax->map : " + map);
+		String schulCode = (String) map.get("schulCode");
+		log.info("studentListAjax->schulCode : " + schulCode);
+
+		List<SchulVO> schoolStudentVOList = this.employeeService.studentList(map);
+		log.info("studentListAjax->schoolStudentVOList : " + schoolStudentVOList);
+
+		int size = 10;
+
+		String currentPage = map.get("currentPage").toString();
+
+		String keyword = "";
+		if (map.get("keyword") == null) {
+			keyword = "";
+		} else {
+			keyword = map.get("keyword").toString();
+		}
+		log.info("studentListAjax->keyword : " + keyword);
+
+		// 데이터 총 갯수 가져오기
+		int total = this.employeeService.getStudentTotal(map);
+		log.info("studentListAjax->total : " + total);
+
+		ArticlePage<SchulVO> data = new ArticlePage<SchulVO>(total, Integer.parseInt(currentPage), size,
+				schoolStudentVOList, keyword, schulCode);
+		String url = "/employee/studentList";
+		data.setUrl(url);
+
+		log.info("studentList->data : " + data);
+
+		return data;
+	}
+	
+	// 학생 상세
+	@GetMapping("/studentDetail")
+	public String studentDetail(@RequestParam(value = "schulCode", required = true) String schulCode, @RequestParam(value = "mberId", required = true) String mberId, Model model) {
+		log.info("studentDetail->schulCode : " + schulCode);
+		log.info("studentDetail->mberId : " + mberId);
+
+		Map<String,Object> map = new HashMap<String, Object>();
+		map.put("schulCode", schulCode);
+		map.put("mberId", mberId);
+		
+		SchulVO schulVO = this.employeeService.studentDetail(map);
+		log.info("studentDetail->schulVO" + schulVO);
+
+		model.addAttribute("schulVO", schulVO);
+		return "employee/studentDetail";
+	}
+	
+	// 학생 등록
+	@GetMapping("/studentCreate")
+	public String studentCreate() {
+		return "employee/studentCreate";
+	}
+
+	@ResponseBody
+	@PostMapping("/studentCreateAjax")
+	public int studentCreateAjax(MemberVO memberVO, SchulPsitnMberVO schulPsitnMberVO, MultipartFile uploadFile) {
+
+		log.info("studentCreateAjax->memberVO : " + memberVO);
+		log.info("studentCreateAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+		int result = this.employeeService.insertMember(memberVO, uploadFile);
+		result += this.employeeService.insertSchoolStudent(schulPsitnMberVO);
+		log.info("studentCreateAjax->result : " + result);
+
+		return result;
+	}
+	
+	// 학생 수정
+	@ResponseBody
+	@PostMapping("/studentUpdateAjax")
+	public int studentUpdateAjax(MemberVO memberVO, SchulPsitnMberVO schulPsitnMberVO, MultipartFile uploadFile) {
+
+		log.info("studentUpdateAjax->memberVO : " + memberVO);
+		log.info("studentUpdateAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+
+		int result = this.employeeService.updateMember(memberVO, uploadFile);
+		result += this.employeeService.updateStudentSchulPsitnMber(schulPsitnMberVO);
+		log.info("studentUpdateAjax->result " + result);
+		
+		return result;
+	}
+	
+//	// 학생 삭제
+//	@ResponseBody
+//	@PostMapping("/studentDeleteAjax")
+//	public int studentDeleteAjax(@RequestBody SchulPsitnMberVO schulPsitnMberVO) {
+//		log.info("studentDeleteAjax->schulPsitnMberVO : " + schulPsitnMberVO);
+//
+//		String schulCode = schulPsitnMberVO.getSchulCode();
+//		String mberId = schulPsitnMberVO.getMberId();
+//		
+//
+//		log.info("schulPsitnMberVO-> " + schulPsitnMberVO);
+//
+//		int result = this.employeeService.studentDeleteAjax(schulPsitnMberVO);
+//
+//		log.info("studentDeleteAjax->result : " + result);
+//
+//		return result;
+//	}
+}

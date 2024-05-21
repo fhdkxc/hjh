@@ -1,0 +1,87 @@
+package kr.or.ddit.school.service.impl;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.school.mapper.AfterSchoolMapper;
+import kr.or.ddit.school.service.AfterSchoolService;
+import kr.or.ddit.vo.AschaVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class AfterSchoolServiceImpl implements AfterSchoolService {
+	
+	@Autowired
+	AfterSchoolMapper afterSchoolMapper;
+
+	// 방과후학교 전체 리스트
+	@Override
+	public List<AschaVO> afterSchoolList(Map<String, Object> map) {
+		return this.afterSchoolMapper.afterSchoolList(map);
+	}
+	
+	// 전체 방과후학교 수
+	@Override
+	public int getTotalAfterSchool(Map<String, Object> map) {
+		return this.afterSchoolMapper.getTotalAfterSchool(map);
+	}
+
+	// 방과후학교 상세
+	@Override
+	public AschaVO afterSchoolDetail(AschaVO aschaVO) {
+		log.info("afterSchoolDetail->service "+aschaVO);
+		return this.afterSchoolMapper.afterSchoolDetail(aschaVO);
+	}
+
+	// 방과후학교 생성
+	@Override
+	public int afterSchoolCreate(AschaVO aschaVO) {
+		// 방과후학교 코드 설정
+		// db에서 가장 큰 코드 가지고 오기
+		log.info("afterSchoolCreate(serviceImpl) -> aschaVO : " + aschaVO);
+		
+		int maxAschaSeq = afterSchoolMapper.getMaxAschaSeq(aschaVO.getSchulCode());
+		log.info("maxSeq ->" +maxAschaSeq);
+		
+		// 일련번호 생성
+		int nextAschaSeq = maxAschaSeq +1;
+		
+		// 현재연도 추출
+		LocalDate now = LocalDate.now();
+		log.info("nowTime : "+now.getYear());
+		
+		// 일련번호를 포함한 방과후학교 코드 설정(SCHUL_CODE+생성연도+일련번호)
+	 	String nextAschaCode = aschaVO.getSchulCode() + now.getYear() +String.format("%04d", nextAschaSeq);
+		
+		// 생성된 방과후학교 코드 설정
+		aschaVO.setAschaCode(nextAschaCode);
+		// 아이디 지정(수정필요함)
+		aschaVO.setMberId("758109210002");
+		
+		return this.afterSchoolMapper.afterSchoolCreate(aschaVO);
+	}
+
+	// 방과후학교 수정
+	@Override
+	public int afterSchoolUpdate(AschaVO aschaVO) {
+		return this.afterSchoolMapper.afterSchoolUpdate(aschaVO);
+	}
+
+	// 방과후학교 삭제
+	@Override
+	public int afterSchoolDelete(AschaVO aschaVO) {
+		return this.afterSchoolMapper.afterSchoolDelete(aschaVO);
+	}
+
+	// 교사의 방과후화면 개설 목록
+	@Override
+	public List<AschaVO> afterSchoolTeacherList(String mberId) {
+		return this.afterSchoolMapper.afterSchoolTeacherList(mberId);
+	}
+
+}

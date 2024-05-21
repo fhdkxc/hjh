@@ -1,0 +1,157 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-=8">
+<title>DoodleChat Rooms</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE-edge">
+<meta name="description" content="Kakao Talk Clone Chat Main Page">
+<meta name="keywords" content="KakaoTalk, Clone, Chat">
+<meta name="robotos" content="noindex, nofollow">
+<link rel="stylesheet" href="/resources/chat/CSS/main-layout.css">
+<link rel="stylesheet" href="/resources/chat/CSS/chatting.css">
+<link rel="stylesheet" href="/resources/chat/CSS/general.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link
+	href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap"
+	rel="stylesheet">
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript">
+const schulCode = '${param.schulCode}';
+const mberId = '${USER_INFO.mberId}';
+const mberNm = '${USER_INFO.mberNm}';
+
+$(function(){
+	
+	//나의 채팅방 목록
+	var data = {
+		"schulCode":schulCode,
+		"mberId":mberId
+	};
+	
+	console.log("data",data);
+	$.ajax({
+		   url:"/chat/rooms",
+		   type:"post",
+		   data:JSON.stringify(data),
+		   contentType:"application/json;charset=utf-8",
+		   dataType:"json",
+		   beforeSend:function(xhr){
+		      xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		   },
+		   success:function(result){
+		      /* result : List<ChttRoomVO> */
+		      
+		      let str = "";
+		      
+		      $.each(result,function(idx,chttRoomVO){
+		    	  str += "<li>";
+		    	  str += "<a href='/chat/chtt?chttRoomCode=" + chttRoomVO.chttRoomCode + "'> ";
+// 		    	  str += "<img src='/resources/chat/pic/friend1.png' class='profile-img' alt='친구1프로필사진'>";
+		    	  str += "<div class='talk'>";
+		    	  // if문으로 chttRoomVO.crtrId 일때와 chttRoomVO.prtcpntId 일때 구분 필요
+		    	  console.log("chttRoomVO.crtrId", chttRoomVO.crtrId);
+		    	  if(mberNm === chttRoomVO.crtrId){
+		    		  console.log("찍히냐??");
+		    		  str += "<p class='friend-name'>이름 : "+chttRoomVO.prtcpntId+"</p>";
+		    	  }else{
+		    		  console.log("찍히냐!!");
+		    		  str += "<p class='friend-name'>이름 : "+chttRoomVO.crtrId+"</p>";
+		    	  }
+// 		    	  str += "<p class='chat-content'>자니...?</p>";
+		    	  str += "</div>";
+		    	  str += "<div class='chat-status'>";
+		    	  str += "<time datetime='2021-03-20'>"+chttRoomVO.crtrId+"</time>";
+		    	  str += "<span class='chat-balloon'>1</span>";
+		    	  str += "</div>";
+		    	  str += "</a>";
+		    	  str += "</li>";
+		    	  str += "<br>";
+		      });
+		   	  $("#chatRoomBody").html(str);
+			}
+	});
+})
+</script>
+</head>
+<body>
+<%-- <p>${USER_INFO}</p> --%>
+	<div id="content">
+		<!-- 설정바(최소화, 닫기 버튼 등) -->
+		<div class="setting_bar">
+			<i class="fa-solid fa-window-minimize" alt="최소화버튼" title="최소화"></i>
+			<i class="fa-regular fa-window-maximize" alt="최대화버튼" title="최대화"></i>
+			<i class="fa-solid fa-xmark" alt="닫기버튼" title="닫기"></i>
+		</div>
+		<!-- 헤더: 제목, 친구 찾기 버튼, 친구 추가 버튼 -->
+		<header>
+			<div style="display: flex; justify-content: space-between;">
+			<div>
+				<h1>채팅</h1>
+				<i class="fa-solid fa-caret-down"></i>
+			</div>
+			<div>
+	            <i class="fa-solid fa-magnifying-glass" alt="통합검색버튼" title="통합검색"></i>
+				<i class="fa-solid fa-comments" alt="오픈채팅버튼" title="오픈 채팅"></i>
+				<i class="fa-solid fa-plus"  alt="새로운채팅버튼" title="새로운 채팅"></i>
+			</div>
+			</div>
+		</header>
+		<!-- 친구창, 대화창, 설정창 등 이동 가능한 네비게이터 -->
+		<nav>
+           <div class="main-menu">
+               <a href="/chat/friends?schulCode=${param.schulCode}">
+                   <i class="fa-solid fa-user" alt="친구메뉴" title="친구"></i>
+               </a>
+               <a href="/chat/rooms?schulCode=${param.schulCode}&mberId=${USER_INFO.mberId}">
+                   <i class="fa-solid fa-comment" alt="채팅메뉴" title="채팅"></i>
+                   <span class="alert-balloon" alt="알림수">3</span>
+               </a>
+               <a href="/main">
+                   <i class="fa-solid fa-ellipsis" alt="더보기버튼" title="더보기"></i>
+                   <span class="alert-balloon" alt="알림수">N</span>
+               </a>
+           </div>
+           <div class="sub-menu">
+               <a href="temp.html" target="_blank">
+               	<i class="fa-solid fa-face-smile" alt="이모티콘샵바로가기" title="이모티콘샵"></i>
+               </a>
+               <i class="fa-solid fa-bell" alt="알림버튼" title="알림"></i>
+               <i class="fa-solid fa-gear" alt="설정버튼" title="설정"></i>
+           </div>
+       </nav>
+       
+		<!-- 메인: 채팅 리스트 화면 -->
+		<main>
+			<div class="myChatrooms">
+				<h4>나의 채팅방</h4>
+			</div>
+			
+			<div id="chatRoomBodys">
+				<ul id="chatRoomBody">
+	<%-- 				<c:forEach var="room" items="${param }" varStatus="stat"> --%>
+	<!-- 					<li> -->
+	<!-- 						<a href="/chat/room?roomId=">  -->
+	<!-- 							<img src="/resources/chat/pic/friend1.png" class="profile-img" alt="친구1프로필사진"> -->
+	<!-- 							<div class="talk"> -->
+	<!-- 								<p class="friend-name"></p> -->
+	<!-- 								<p class="chat-content">자니...?</p> -->
+	<!-- 							</div> -->
+	<!-- 							<div class="chat-status"> -->
+	<!-- 								<time datetime="2021-03-20">2021-03-20</time> -->
+	<!-- 								<span class="chat-balloon">1</span> -->
+	<!-- 							</div> -->
+	<!-- 						</a> -->
+	<!-- 					</li> -->
+	<!-- 					<br> -->
+	<%-- 				</c:forEach> --%>
+				</ul>
+			</div>
+		</main>
+	</div>
+</body>
+</html>

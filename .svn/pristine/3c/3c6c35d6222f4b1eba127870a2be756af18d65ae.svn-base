@@ -1,0 +1,175 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<style>
+h3{
+	font-size: 2.2rem;
+	text-align: center;
+	margin-top: 60px;
+	backdrop-filter: blur(4px);
+	background-color: rgba(255, 255, 255, 1);
+	border-radius: 50px;
+	box-shadow: 35px 35px 68px 0px rgba(145, 192, 255, 0.5), inset -8px -8px 16px 0px rgba(145, 192, 255, 0.6), inset 0px 11px 28px 0px rgb(255, 255, 255);
+	width: 370px;
+	padding-top: 35px;
+	padding-bottom: 35px;
+	margin: auto;
+	margin-top: 50px;
+	margin-bottom: 40px;
+}
+</style>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript">
+//전역 변수
+var currentPage = "${param.currentPage}";
+var keyword = "";
+
+function fn_search(page) {
+    var keyword = $("#keyword").val();
+    
+    var data = {
+        "schulCode": "${param.schulCode}",
+        "currentPage": page, // page 매개변수 사용
+        "keyword": keyword
+    }
+
+    console.log("data:", data);
+
+    $.ajax({
+        url: "/employee/studentListAjax",
+        type: "post",
+        data: JSON.stringify(data),
+        contentType: "application/json;charset=utf-8",
+        dataType: "json",
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("${_csrf.headerName}", "${_csrf.token}");
+        },
+        success: function(result) {
+        	console.log(result.content);
+
+            if (result.total == 0) {
+                $("#keyword").val('');
+
+                var str = "<tr>";
+                str += "<td colspan='7' style='text-align: center;font-size: 2.0rem;'>" + keyword + "에 대한 검색 결과가 없습니다</td>";
+                str += "</tr>";
+
+                $("#studentBody").html(str);
+            } else {
+                var str = ""; // 결과를 누적하기 위해 빈 문자열로 초기화
+
+                $.each(result.content, function(idx, schulVO) {
+                    $.each(schulVO.schulPsitnMberVOList, function(idx2, schulPsitnMberVO) {
+                        str += "<tr onclick='location.href=\"/employee/studentDetail?schulCode=" + schulPsitnMberVO.schulCode + "&mberId=" + schulPsitnMberVO.mberId + "\"' style='cursor: pointer;'>";
+                        str += "<td>" + schulPsitnMberVO.rnum + "</td>";
+                        str += "<td>" + schulPsitnMberVO.mberId + "</td>";
+                        str += "<td>" + schulPsitnMberVO.memberVO.mberNm + "</td>";
+                        str += "<td>" + schulPsitnMberVO.memberVO.moblphonNo + "</td>";
+                        str += "<td>" + schulPsitnMberVO.memberVO.mberEmail + "</td>";
+                        str += "<td>" + schulPsitnMberVO.cmmnGrade + "학년</td>";
+                        str += "<td>" + schulPsitnMberVO.cmmnSchulPsitnSttus + "</td>";
+                        str += "</tr>";
+                    });
+                });
+
+                $("#studentBody").html(str);
+            }
+
+            $("#divPaging").html(result.pagingArea);
+        },
+        error: function(xhr, status, error) {
+            console.error(status, error);
+        }
+    });
+}
+
+$(function(){
+	fn_search(1);
+	
+	//input태그에서 엔터시 검색버튼누르기
+	var input = $("#keyword");
+
+	  input.on("keypress", function(event) {
+	      if (event.key === "Enter") {
+	          event.preventDefault();
+	          $("#search").click();
+	      }
+	  });
+
+	currentPage = "1";
+	// 학생 검색
+	$("#search").on("click",function(){
+		fn_search(1);
+	});
+	
+})
+</script>
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" style="min-height: 824px;">
+	<div class="product-status-wrap" style="position: relative;">
+		<h3>
+			<img src="/resources/images/student/student2.png" style="width:50px; display:inline-block; vertical-align:middel;">
+				학생 목록
+			<img src="/resources/images/student/student1.png" style="width:50px; display:inline-block; vertical-align:middel;">		
+		</h3>
+		<div class="asset-inner">
+			<div class="breadcome-heading" style="width: 300px; display: flex;">
+				<form role="search" class="sr-input-func" id="frm" onsubmit="return false;" style="margin-bottom: 20px; display: flex;">
+					<input type="text" placeholder="Search..." class="search-int form-control"  id="keyword" name="keyword">
+					<a href="#" id="search">
+						<i class="fa fa-search"></i>
+					</a>
+				</form>
+				<div class="add-product">
+					<a class="" href="/employee/studentCreate?schulCode=${schoolStudentVOList[0].schulPsitnMberVOList[0].schulCode}">학생 등록</a>
+				</div>
+			</div>
+			<table>
+				<thead>
+					<tr>
+						<th>번호</th>
+						<th>학생 아이디</th>
+						<th>학생 명</th>
+						<th>학생 전화번호</th>
+						<th>학생 이메일</th>
+						<th>학생 구분</th>
+						<th>학생 상태</th>
+					</tr>
+				</thead>
+				<tbody id="studentBody">
+				<!-- 
+				schoolStudentVOList : List<SchulVO> schoolStudentVOList
+				 -->
+	<%-- 			<c:set var="cnt" value="0" /> --%>
+				 <!-- 학교 -->
+	<%-- 			<c:forEach var="SchulVO" items="${schoolEmployeeVOList}" varStatus="stat"> --%>
+						<!--  학교의 학생
+						List<SchulPsitnMberVO> schulPsitnMberVOList <- SchulVO.schulPsitnMberVOList
+						-->
+	<%-- 					<c:forEach var="schulPsitnMberVO" items="${SchulVO.schulPsitnMberVOList}" varStatus="stat2"> --%>
+	<%-- 					<c:set var="cnt" value="${cnt+1}" /> --%>
+<!-- 						<tr> -->
+	<%-- 						<td>${cnt}</td> --%>
+	<%-- 						<td>${schulPsitnMberVO.mberId}</td> --%>
+	<%-- 						<td>${schulPsitnMberVO.memberVO.mberNm}</td> --%>
+	<%-- 						<td>${schulPsitnMberVO.cmmnGrade}</td> --%>
+	<%-- 						<td>${schulPsitnMberVO.cmmnSchulPsitnSttus}</td> --%>
+	<!-- 						<td> -->
+	<!-- 							<button data-toggle="tooltip" title="" class="pd-setting-ed" -->
+	<!-- 								data-original-title="Edit"> -->
+	<!-- 								<i class="fa fa-pencil-square-o" aria-hidden="true"></i> -->
+	<!-- 							</button> -->
+	<!-- 							<button data-toggle="tooltip" title="" class="pd-setting-ed" -->
+	<!-- 								data-original-title="Trash"> -->
+	<!-- 								<i class="fa fa-trash-o" aria-hidden="true"></i> -->
+	<!-- 							</button> -->
+	<!-- 						</td> -->
+	<!-- 					</tr> -->
+	<%-- 					</c:forEach> --%>
+	<%-- 				</c:forEach> --%>
+				</tbody>
+			</table>
+		</div>
+		<div class="custom-pagination" id="divPaging">
+		
+		</div>
+	</div>
+</div>

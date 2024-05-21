@@ -1,0 +1,497 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags" %>
+<script src="https://ssl.daumcdn.net/dmaps/map_js_init/postcode.v2.js"></script>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript">
+$(function(){
+	
+	
+	/* 학생 삭제 시작 */
+// 	$("#delBtn").on("click",function(){
+// 		if(!confirm("삭제하시겠습니까?")){
+// 			alert("삭제가 취소되었습니다.");
+// 			return;
+// 		}
+// 		let schulCode = $("#pSchulCode").text().trim();
+// 		let mberId = $("#pMberId").text().trim();
+		
+// 		let data = {
+// 				"mberId":mberId,
+// 				"schulCode":schulCode
+// 		};
+		
+// 		console.log("data : ", data);
+		
+// 		$.ajax({
+// 			url:"/employee/studentDeleteAjax",
+// 			contentType:"application/json;charset=utf-8",
+// 			data:JSON.stringify(data),
+// 			type:"post",
+// 			dataType:"text",
+// 			beforeSend:function(xhr){
+// 				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+// 			},
+// 			success:function(result){
+// 				let schulCode = "${param.schulCode}";
+// // 				console.log("result:",result);
+// // 				console.log("schulCode:",schulCode);
+// 				location.href = "/employee/studentList?schulCode="+schulCode;
+// 			}
+// 		});
+// 	}); /* 학생 삭제 끝 */
+	
+	
+	// 학생 수정 시작
+	$("#updateBtn").on("click",function(){
+		let schulCode = $.trim($("#pSchulCode").text());
+		let mberId = $("#mberId").val();
+		let mberNm = $("#mberNm").val();
+		let mberEmail = $("#mberEmail").val();
+		let moblphonNo = $("#moblphonNo").val();
+		let cmmnGrade = $("#cmmnGrade option:selected").val();
+		let cmmnSchulPsitnSttus = $("#cmmnSchulPsitnSttus option:selected").val();
+		let zip = $("#zip").val();
+		let mberAdres = $("#mberAdres1").val() + " " + $("#mberAdres2").val();
+
+		console.log("schulCode : " + schulCode);
+		
+		// 가상 폼 <form></form>
+		$("#mberAdres").val(mberAdres);
+		var frm = new FormData($("#frm")[0]);
+		frm.append("schulCode",schulCode);
+		
+		$.ajax({
+			url:"/employee/studentUpdateAjax",
+			processData:false,
+			contentType:false,
+			data:frm,
+			type:"post",
+			dataType:"json",
+			beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+			success:function(result){
+				//result : SchulVO
+				console.log("result:",result);
+				var Toast = Swal.mixin({
+					toast: true,
+					position: 'top-end',
+					showConfirmButton: true,
+					timer: 3000
+				});
+				Toast.fire({
+					icon:'info',
+					title:'수정 성공!'
+				});
+				
+				let str = "";
+					$("#PrimaryModalhdbgcl").css("display","none");
+					$("#studentBody").html("");
+					
+					str += "<div class='row'>";
+					str += "<span id='pSchulCode' style='display: none;'>";
+					str += result.schulCode+"</span>";
+					str += "<div class='profile-img'>";
+					str += "<img src='/upload/profile/"+result.schulPsitnMberVOList[0].memberVO.mberImage+"' id='pMberImage' style='width: 300px; height: 300px;'>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='row'>";
+					str += "<div class='profile-details-hr'>";
+					str += "<div class='row'>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr'>";
+					str += "<p><b>학생 아이디</b></p>";
+					str += "<p id='pMberId'>";
+					str += result.schulPsitnMberVOList[0].memberVO.mberId+"</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr tb-sm-res-d-n dps-tb-ntn'>";
+					str += "<p><b>학생 명</b></p>";
+					str += "<p id='pMberNm'>";
+					str += result.schulPsitnMberVOList[0].memberVO.mberNm;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='row'>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr'>";
+					str += "<p><b>Email</b></p>";
+					str += "<p id='pMberEmail'>";
+					str += result.schulPsitnMberVOList[0].memberVO.mberEmail;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr tb-sm-res-d-n dps-tb-ntn'>";
+					str += "<p><b>Phone</b></p>";
+					str += "<p id='pMoblphonNo'>";
+					str += result.schulPsitnMberVOList[0].memberVO.moblphonNo;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='row'>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr'>";
+					str += "<p><b>학생 학년</b></p>";
+					str += "<p id='pCmmnGrade'>";
+					str += result.schulPsitnMberVOList[0].cmmnGrade;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr tb-sm-res-d-n dps-tb-ntn'>";
+					str += "<p><b>학생 상태</b></p>";
+					str += "<p id='pCmmnSchulPsitnSttus'>";
+					str += result.schulPsitnMberVOList[0].cmmnSchulPsitnSttus;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='row'>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr'>";
+					str += "<p><b>우편번호</b></p>";
+					str += "<p id='pZip'>";
+					str += result.schulPsitnMberVOList[0].memberVO.zip;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "<div class='col-lg-6 col-md-12 col-sm-12 col-xs-6'>";
+					str += "<div class='address-hr'>";
+					str += "<p><b>주소</b></p>";
+					str += "<p id='pMberAdres'>";
+					str += result.schulPsitnMberVOList[0].memberVO.mberAdres;
+					str += "</p>";
+					str += "</div>";
+					str += "</div>";
+					str += "</div>";
+					
+					$("#studentBody").append(str);
+			}
+		});//end ajax
+		
+	}); // 학생 수정  끝
+	
+	/* 썸네일 시작 */
+	$("#inputImgs").on("change",handleImg);
+	
+	//e : onchange 이벤트 객체
+	function handleImg(e){
+		//e.target : <input type="file"..
+		let files = e.target.files;
+		//이미지 오브젝트 배열		
+		let fileArr = Array.prototype.slice.call(files);
+		//초기화
+		$("#thum").html("");
+		//fileArr : {"개똥이.jpg객체","홍길동.jpg객체"}
+		//f :각각의 이미지 파일
+		fileArr.forEach(function(f){
+			//f.type : MIME타입
+			if(!f.type.match("image.*")){
+				var Toast = Swal.mixin({
+					toast: true,
+					position: 'top-end',
+					showConfirmButton: true,
+					timer: 3000
+				});
+				Toast.fire({
+					icon:'warning',
+					title:'이미지 확장자만 가능합니다'
+				});
+				//함수 종료
+				return;
+			}
+			//이미지를 읽어보자
+			let reader = new FileReader();
+			
+			//e : reader가 이미지를 읽을 때 그 이벤트
+			reader.onload = function(e){
+				//e.target : 이미지 객체
+				let img = "<img src="+e.target.result+" style='width:100%; height:100%; text-align:center; display:block; margin:auto;' />";
+				$("#thum").append(img);
+			}
+			
+			reader.readAsDataURL(f);
+		});
+	}/* 썸네일 끝 */
+	
+	let schulCode = $("#pSchulCode").text().trim();
+	let mberId = $("#pMberId").text().trim();
+	let mberNm = $("#pMberNm").text().trim();
+	let mberEmail = $("#pMberEmail").text().trim();
+	let moblphonNo = $("#pMoblphonNo").text().trim();
+	let mberImage = $("#pMberImage").text().trim();
+	console.log("mberImage",mberImage);
+	let cmmnGrade = $("#pCmmnGrade").text().trim();
+	let cmmnSchulPsitnSttus = $("#pCmmnSchulPsitnSttus").text().trim();
+	let zip = $("#pZip").text().trim();
+	let mberAdres = $("#pMberAdres").text().trim();
+	
+	/* 학생 목록 버튼 시작 */
+	$("#listBtn").on("click",function(){
+		let schulCode = $("#pSchulCode").text().trim();
+		console.log('schulCode',schulCode);
+		location.href = "/employee/studentList?schulCode="+schulCode;
+	});/* 학생 목록 버튼 끝 */
+	
+	/* 수정 모달 열기 시작 */
+	$("#modBtn").on("click",function(){
+		console.log("modBtn");
+		$("#PrimaryModalhdbgcl").css("display","block");
+		$("#schulCode").val(schulCode);
+		$("#mberId").val(mberId);
+		$("#mberNm").val(mberNm);
+		$("#mberEmail").val(mberEmail);
+		$("#moblphonNo").val(moblphonNo);
+		$("")
+		$("#cmmnGrade").val(cmmnGrade);
+		$("#cmmnSchulPsitnSttus").val(cmmnSchulPsitnSttus);
+		$("#zip").val(zip);
+		$("#mberAdres1").val(mberAdres);
+	})/* 수정 모달 열기 끝 */
+	
+	/* 수정 모달 닫기 시작 */
+	$("#modClose").on("click",function(){
+		$("#PrimaryModalhdbgcl").css("display","none");
+	})/* 수정 모달 닫기 끝 */
+	
+	/* 수정 모달 닫기 시작 */
+	$("#empModalClose").on("click",function(){
+		$("#PrimaryModalhdbgcl").css("display","none");
+	})/* 수정 모달 닫기 끝 */
+	
+	/* 우편 번호 검색 시작 */
+	$("#btnPostNum").on("click", function() {
+		new daum.Postcode({
+			//다음 창에서 검색이 완료되면
+			oncomplete : function(data) {
+				$("#zip").val(data.zonecode);//우편번호
+				$("#mberAdres1").val(data.address);//주소
+			}
+		}).open();
+	});/* 우편 번호 검색 끝 */
+});
+
+</script>
+<div class="col-lg-4 col-md-4 col-sm-4 col-xs-12" style="width: 100%;">
+	<div class="profile-info-inner" id="studentBody" style="display: flex; justify-content: space-evenly;">
+		<div class="row">
+		<span id="pSchulCode" style="display: none;">${schulVO.schulCode}</span>
+			<div class="profile-img">
+				<img src="/upload/profile/${schulVO.schulPsitnMberVOList[0].memberVO.mberImage}" id="pMberImage" style="width: 300px; height: 300px;">
+			</div>
+		</div>
+		<div class="row">
+			<div class="profile-details-hr">
+				<div class="row">
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+						<p><b>학생 아이디</b></p>
+							<p id="pMberId">
+								${schulVO.schulPsitnMberVOList[0].memberVO.mberId}</p>
+						</div>
+					</div>
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr tb-sm-res-d-n dps-tb-ntn">
+							<p><b>학생 명</b></p>
+							<p id="pMberNm">
+								${schulVO.schulPsitnMberVOList[0].memberVO.mberNm}
+							</p>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+							<p><b>Email</b></p>
+							<p id="pMberEmail">
+								${schulVO.schulPsitnMberVOList[0].memberVO.mberEmail}
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr tb-sm-res-d-n dps-tb-ntn">
+							<p><b>Phone</b></p>
+							<p id="pMoblphonNo">
+								${schulVO.schulPsitnMberVOList[0].memberVO.moblphonNo}
+							</p>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+						<p><b>학생 학년</b></p>
+							<p>
+								${schulVO.schulPsitnMberVOList[0].cmmnGrade}
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr tb-sm-res-d-n dps-tb-ntn">
+							<p><b>학생 상태</b></p>
+							<p>
+								${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus}
+							</p>
+						</div>
+					</div>
+				</div>
+				<div class="row" style="display: none;">
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+						<p><b>학생 학년</b></p>
+							<p id="pCmmnGrade">
+							<c:choose>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '1'}">A22001</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '2'}">A22002</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '3'}">A22003</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '4'}">A22004</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '5'}">A22005</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnGrade eq '6'}">A22006</c:when>
+							</c:choose>
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr tb-sm-res-d-n dps-tb-ntn">
+							<p><b>학생 상태</b></p>
+							<p id="pCmmnSchulPsitnSttus">
+							<c:choose>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus eq '재학'}">A02101</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus eq '휴학'}">A02102</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus eq '전학'}">A02103</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus eq '졸업'}">A02107</c:when>
+								<c:when test="${schulVO.schulPsitnMberVOList[0].cmmnSchulPsitnSttus eq '자퇴'}">A02108</c:when>
+							</c:choose>
+							</p>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+							<p><b>우편번호</b></p>
+							<p id="pZip">
+								${schulVO.schulPsitnMberVOList[0].memberVO.zip}
+							</p>
+						</div>
+					</div>
+					<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+						<div class="address-hr">
+							<p><b>주소</b></p>
+							<p id="pMberAdres">
+								${schulVO.schulPsitnMberVOList[0].memberVO.mberAdres}
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row" style="margin-left: 40%;">
+		<div class="col-lg-6 col-md-12 col-sm-12 col-xs-6">
+			<div class="address-hr tb-sm-res-d-n dps-tb-ntn">
+				<p class="btnZone" style="width: 300px">
+					<button type="button" class="btn btn-primary" id="modBtn" >학생 수정</button>
+<!-- 					<button type="button" class="btn btn-primary" id="delBtn">학생 삭제</button> -->
+					<button type="button" class="btn btn-primary" id="listBtn">학생 목록</button>
+				</p>
+			</div>
+		</div>
+	</div>
+
+<!-- 학생 수정 모달 시작 -->
+<div id="PrimaryModalhdbgcl" class="modal modal-edu-general default-popup-PrimaryModal fade in" role="dialog" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header header-color-modal bg-color-1">
+                <h4 class="modal-title">학생 수정</h4>
+                <div class="modal-close-area modal-close-df">
+                    <a class="close" id="empModalClose" data-dismiss="modal" href="#"><i class="fa fa-close"></i></a>
+                </div>
+            </div>
+            <div class="modal-body">
+        <p>
+        	<div class="form-group">
+        	<form id="frm" action="" method="post"enctype="multipart/form-data">
+				<div id="thum" style="margin:auto; background:#eeeef5; width:200px; height:200px; border-radius:300px; overflow:hidden; margin-top:40px;"  ></div>
+				<input type="file" class="form-control is-valid" id="inputImgs" name="uploadFile" />
+				<input type="text" class="form-control is-valid" id="mberId" name="mberId" 
+				placeholder="학생 아이디" style="display: none;"/>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="mberNm">
+					학생 명</label>
+					<input type="text" class="form-control is-valid" id="mberNm" name="mberNm" 
+					placeholder="학생 명"style="display:inline-block; width: 87.9%" />
+				</div>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="mberEmail">
+					Email</label>
+					<input type="text" class="form-control is-warning" id="mberEmail" name="mberEmail" 
+					placeholder="Email" style="display:inline-block; width: 91.4%"/>
+				</div>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="moblphonNo">
+					휴대폰 번호</label>
+					<input type="text" class="form-control is-warning" id="moblphonNo" name="moblphonNo" 
+					placeholder="휴대폰 번호" style="display:inline-block; width: 85.2%"/>
+				</div>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="zip">
+					우편 번호</label>
+					<input type="text" class="form-control is-warning" id="zip" name="zip" 
+					placeholder="우편 번호" style="display:inline-block; width: 67%" />
+					<button type="button" id="btnPostNum" style="display:inline-block;">우편번호검색</button>
+				</div>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="mberAdres1">
+					주소</label>
+					<input type="text" class="form-control is-warning" id="mberAdres1" name="mberAdres1" 
+					placeholder="주소" style="display:inline-block; width: 93.5%"/>
+				</div>
+				<div style="text-align: left;">
+					<label class="col-form-label" for="mberAdres2">
+					상세 주소</label>
+					<input type="text" class="form-control is-warning" id="mberAdres2" name="mberAdres2" 
+					placeholder="상세주소" style="display:inline-block; width: 87.4%"/>
+					<input type="hidden" name="mberAdres" id="mberAdres">
+				</div>
+			
+			<label class="col-form-label" for="cmmnGrade">
+			학년</label>
+			<select name="cmmnGrade" id="cmmnGrade">
+				<option disabled selected>학년을 선택하세요</option>
+				<option value="A22001">1</option>
+				<option value="A22002">2</option>
+				<option value="A22003">3</option>
+				<option value="A22004">4</option>
+				<option value="A22005">5</option>
+				<option value="A22006">6</option>
+			</select>
+			<label class="col-form-label" for="cmmnSchulPsitnSttus">
+			학생 상태</label>
+			<select name="cmmnSchulPsitnSttus" id="cmmnSchulPsitnSttus">
+            	<option disabled selected>상태를 선택하세요</option>
+            	<option value="A02101">재학</option>
+            	<option value="A02102">휴학</option>
+            	<option value="A02103">전학</option>
+            	<option value="A02107">졸업</option>
+            	<option value="A02108">자퇴</option>
+              </select>
+		</form>
+		</div>
+	</p>
+		</div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="updateBtn">수정</button>
+                <button data-dismiss="modal" id="modClose" class="btn btn-primary">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 학생 수정 모달 끝 -->
+</div>

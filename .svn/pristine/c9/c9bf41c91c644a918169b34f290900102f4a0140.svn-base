@@ -1,0 +1,50 @@
+package kr.or.ddit.dclz.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.dclz.service.DclzService;
+import kr.or.ddit.vo.DclzVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Controller
+@RequestMapping("/dclz")
+public class DclzController {
+
+	@Autowired
+	DclzService dclzService;
+	
+	// 출결 관리 페이지
+	@GetMapping("/main")
+	public String main(){
+		return "dclz/dclzMain";
+	}
+	
+	// 학생 등교 하교 기록
+	@ResponseBody
+	@PostMapping("/insertDclz")
+	public int insertDclz(@RequestBody String clasStdntCode){
+		int cnt = dclzService.insertDclz(clasStdntCode);
+		log.info("cnt : "+cnt);
+		return cnt;
+	}
+
+	// 출결 정보 get
+	@ResponseBody
+	@PostMapping("/getAllDclz")
+	public List<DclzVO> getAllDclz(HttpServletRequest request){
+		return dclzService.getAllDclz(request);
+	}
+	
+	
+}

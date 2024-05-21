@@ -1,0 +1,312 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 4.4.2 -->
+<style>
+	#StdntDetailContainer h3 {
+		font-size: 2.2rem;
+		text-align: center;
+		margin-top: 60px;
+		backdrop-filter: blur(4px);
+		background-color: rgba(255, 255, 255, 1);
+		border-radius: 50px;
+		box-shadow: 35px 35px 68px 0px rgba(145, 192, 255, 0.5), inset -8px -8px 16px 0px rgba(145, 192, 255, 0.6), inset 0px 11px 28px 0px rgb(255, 255, 255);
+		width: 370px;
+		padding-top: 35px;
+		padding-bottom: 35px;
+		margin: auto;
+		margin-top: 50px;
+		margin-bottom: 40px;
+	}
+</style>
+<script>
+//학생 결과 목록 테이블 가로 길이
+var rowsCount = 6;
+// 단원평가 모든 정보
+var ueRes = {};
+
+window.onload = function() {
+	// 모든 시험 정보 가져오는 ajax
+	getOneUnitEvlAndAllGc();
+	console.log("ueRes:",ueRes);
+
+	// 학생 시험 결과 목록 출력
+	setGcList();
+	
+	// 교사의 학생 성적 차트
+	drawChart();
+	
+} // end onload
+
+//학생 시험 결과 목록 출력
+const setGcList = function(){
+	let str = "";
+	if(ueRes[0].unitEvlScoreVOList.length == 0){
+		str = `<tr><td colspan="\${rowsCount}" style="text-align: center;">등록된 단원평가 결과가 없습니다.</td></tr>`
+		document.querySelector("#listTbody").innerHTML = str;
+		return;
+	}
+	
+	let myMberId = "${clasStdntVO.memberVO.mberId}";
+
+	ueRes[0].unitEvlScoreVOList.forEach(function(item, index){
+		let isDone = item.gcCode == null ? false:true ; // 학생이 시험에 응시했는지
+		
+		str += `<tbody>
+				<tr>
+				<td>\${item.clasInNo}</td>
+				<td>\${item.mberNm}</td>`;
+		// 미응시 학생이면 응시 일시 : 미응시
+		if(isDone){ 
+			str +=  `<td>\${dateToMinFormat(item.gcDate)}</td>`;
+		}else{
+			str += `<td>미응시</td>`;
+		}
+				
+		str +=  `<td>\${item.scre}</td>
+				<td style="text-align: center">`;
+		
+		// 학생 답안 보기 버튼
+		if(isDone){ 
+			str +=	`<button onclick="showResDet('\${index}')" class = "d-btn-blue">보기</button>`;
+		}
+		str +=	`</td>
+	  			 <td style="text-align: center">`;
+		
+		// (교사) 학생 성적표 삭제 버튼
+		if(isDone){ 
+			str +=  `<button onclick="deleteStdRes('\${index}')" class ="d-btn-red">삭제</button>`;
+		}
+		str +=	`</td>`;
+		
+		// (교사) 문자 발송 버튼
+		str +=  `<td style="text-align: center">
+				<button onclick="sendMsg('\${index}')" class ="d-btn-blue">문자 전송</button>
+				<td>`;
+		
+		str +=	`</tr>
+				<tbody>`;
+				
+		// (학생) 이미 시험을 본 학생이면 버튼 비활성화, 답안지 보임
+	    if(myMberId == item.mberId && isDone){
+		    let btn = document.querySelector("#examBtn");
+			btn.innerHTML = "응시 완료";
+			btn.className = "d-div-green";
+			btn.disabled = "true";
+			btn.style ="width:100%";
+			
+			// 답안 결과 보임.
+			document.querySelector("#aswperViewer").style.display = "block";
+			setScoreTable();
+			
+			// 차트
+			drawChart();
+	    }
+	})
+	document.querySelector("#listTbody").innerHTML = str;
+}
+
+//모든 시험 정보 가져오는 ajax
+const getOneUnitEvlAndAllGc = function(){
+	$.ajax({
+		url :"/unitTest/getOneUnitEvlAndAllGc",
+	    type:"post",
+	    data:"${unitEvlCode}",
+	    contentType:"application/json",
+	    dataType:"json",
+	    async : false,
+	    beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success : function(res) {
+			ueRes = res;
+		}
+	});
+} // end getOneUnitEvlAndAllGc
+
+//chartjs
+//4.4.2
+const drawChart = function(){
+	const scoreChart = document.querySelector('#scoreChart');
+	scoreChart.style.display ="block";
+	let chartType     = "bar";
+	let chartLabel    = [];
+	let chartData	  = [{
+						data:[],
+					    borderWidth:1,
+					    backgroundColor:[]
+					    }];
+	let chartOptions  = null;
+	
+	// 복사
+	let clone = JSON.parse(JSON.stringify(chartData[0]));
+	
+	chartLabel.push("내점수");
+	chartLabel.push("반평균");
+	chartData[0].data.push(ueRes[0].unitEvlScoreVOList[0].scre);
+	chartData[0].data.push(ueRes[0].avgClasScore);
+	chartData[0].backgroundColor.push('#FCC25BB0');
+	chartData[0].backgroundColor.push('#ccccccb0');
+	
+	chartOptions = {
+ 	responsive: false,
+ 	indexAxis : 'y', // 가로 차트
+
+     scales: {
+         x: {
+             beginAtZero: true,
+         	max :100,
+	        	ticks:{
+	        		stepSize:5
+	        	},
+         },
+     },
+     plugins: {
+         legend: {
+           display: false
+         },
+     },
+	}
+	
+	// 교사
+	chartData[0].maxBarThickness = "200";
+	console.log("charData[0]",chartData[0]);
+
+	// 반평균 점수 put
+		chartLabel.push("평균 점수");
+		chartData[0].data.push(ueRes[0].avgClasScore);
+		chartData[0].backgroundColor.push('#ccccccb0');
+		chartLabel.push("최저 점수");
+		chartData[0].data.push(ueRes[0].minScore);
+		chartData[0].backgroundColor.push('#006DF0b0');
+		chartLabel.push("최고 점수");
+		chartData[0].data.push(ueRes[0].maxScore);
+		chartData[0].backgroundColor.push('#df3c3cb0');
+	
+	// 학생 정보 put
+	for(let i = 0; i < ueRes[0].unitEvlScoreVOList.length; ++i){
+		chartLabel.push(ueRes[0].unitEvlScoreVOList[i].mberNm);
+		chartData[0].data.push(ueRes[0].unitEvlScoreVOList[i].scre);
+		chartData[0].backgroundColor.push('#FCC25BB0');
+	}
+	
+	chartOptions = {
+ 	responsive: false,
+
+     scales: {
+         y: {
+             beginAtZero: true,
+         	max :100,
+	        	ticks:{
+		         	stepSize :5,
+	        	},
+         },
+     },
+     plugins: {
+         legend: {
+           display: false
+         }
+     },
+	}	
+	scoreChart.style.height = "300px";
+	
+	let myScoreChart = new Chart(scoreChart, {
+	    type: chartType,
+	    data: {
+	        labels: chartLabel,
+	        datasets: chartData,
+	    },
+	    options: chartOptions
+	});
+	
+	myScoreChart.update();
+	
+	// 응시 비율 그래프
+	const finishRatioChart = document.querySelector('#finishRatioChart');
+	finishRatioChart.style.display ="block";
+	let doneColor = window.getComputedStyle(document.documentElement).getPropertyValue('--blue-color');
+	let yetColor = window.getComputedStyle(document.documentElement).getPropertyValue('--gray-color');
+
+	finishRatioChart.style.height = "300px";
+	
+	let myFinishRatioChart = new Chart(finishRatioChart, {
+	    type: "pie",
+	    data: {
+	        labels: ["응시 인원", "미응시 인원"],
+	        datasets: [{
+	        	data :[ueRes[0].doneCnt,ueRes[0].yetCnt],
+	    		backgroundColor :[doneColor, yetColor],
+	        }],
+	    },
+	    options: {
+     	responsive: false,
+         plugins: {
+//              legend: {
+//                display: false
+//              },
+         },
+     }
+	});
+	
+	myFinishRatioChart.update();
+}
+</script>
+<div id="StdntDetailContainer">
+	<h3>
+		<img src="/resources/images/consultation/folder.png" style="width:50px; display:inline-block; vertical-align:middel;">
+		학생 상세 정보
+		<img src="/resources/images/consultation/folder2.png" style="width:50px; display:inline-block; vertical-align:middel;">
+	</h3>
+	<table class="d-tb" style="width: 100%;">
+		<tbody>
+			<tr>
+				<td colspan="2" rowspan="4" style="width: 250px; height: 300px;">
+	                <img src="/upload/profile/${clasStdntVO.memberVO.mberImage}" style="width: 100%; height: 100%;" >
+	            </td>
+				<th style="width: 15%;">학생 아이디</th>
+				<td style="width: 20%;">${clasStdntVO.memberVO.mberId}</td>
+				<th style="width: 15%;">학급 번호</th>
+				<td style="width: 20%;">${clasStdntVO.clasInNo}</td>
+			</tr>
+			<tr>
+				<th>학생 이름</th>
+				<td>${clasStdntVO.memberVO.mberNm}</td>
+				<th>주민등록번호</th>
+				<td>${clasStdntVO.memberVO.ihidnum}</td>
+			</tr>
+			<tr>
+				<th>휴대폰 번호</th>
+				<td>${clasStdntVO.memberVO.moblphonNo}</td>
+				<th>이메일</th>
+				<td>${clasStdntVO.memberVO.mberEmail}</td>
+			</tr>
+			<tr>
+				<th>주소</th>
+				<td colspan="3">[${clasStdntVO.memberVO.zip}] ${clasStdntVO.memberVO.mberAdres}
+				</td>
+			</tr>
+			<tr>
+				<th colspan="100%" style="text-align: center;">학급 활동</th>
+			</tr>
+			<tr>
+				<td colspan="100%">
+					<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12" style="margin-bottom: 20px;">
+						<!-- 점수 꺾은선 차트 -->
+						<div class="col-lg-9 col-md-9 col-sm-9 col-xs-9">
+							<div style="width: 100%; display: block;">
+								<h4>반 점수 및 학생 점수</h4>
+								<canvas id="scoreChart" style="height: 300px; width: 100%; display: block; box-sizing: border-box;" width="699" height="300"></canvas>
+							</div>
+						</div>							
+						<!-- 응시 비율 차트 -->
+						<div class="col-lg-3 col-md-3 col-sm-3 col-xs-3">
+							<div style="width: 100%; display: block;">
+								<h4>응시 비율</h4>
+								<canvas id="finishRatioChart" style="height: 300px; width: 100%; box-sizing: border-box; display: block;" width="300" height="300"></canvas>
+							</div>
+						</div>	
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</div>

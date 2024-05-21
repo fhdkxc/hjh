@@ -1,0 +1,330 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ page import="java.util.List"%>
+<%@ page import="kr.or.ddit.vo.SchafsSchdulVO"%>
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<!-- FullCalendar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales-all.js"></script>
+<!-- 구글 캘린더 API(공휴일) -->
+<script type="text/javascript" src="/resources/js/gcal.js"></script>
+
+<style>
+/* 일정 구분 시작 */
+.scheduleSe{
+	margin-right: 20px;
+}
+.scheduleSe:last-child{
+	margin-right: 0px;
+}
+
+.inputSchedule{
+	margin-bottom: 20px;
+}
+/* 일정 구분 끝 */
+
+/* fullCalendar 배경색 */
+#cnsltCalendar {
+	background-color: white;
+}
+
+/* 하루짜리 일정 배경색 바꾸기 */
+.fc-event-future{
+/* 	background-color: red; */
+	
+}
+
+/* 달력에 손가락 올리면 마우스 포인터가 손가락 모양되게 변경 */
+.fc-daygrid-day:hover {
+	cursor: pointer;
+}
+
+/* 전체 글씨 색 변경 */
+.fc-day a {
+	color: black;
+}
+
+/* 공휴일 글씨 변경 */
+.koHolidays .fc-event-title {
+  font-weight: bold;
+}
+
+/* 달력에 손가락 올리면 해당 부분이 노란색으로 변경 됨 */
+.fc-day:hover {
+/*   background-color: #eee; */
+  color: #333;
+  cursor: pointer;
+}
+
+/* 오늘 날짜 글씨 색과 bold 변경 */
+.fc-day-today a {
+  font-weight: bold;
+  color: #FFFFFF !important;
+}
+
+/* 일요일 날짜: 빨간색 */
+.fc-day-sun a {
+    color: red;
+}
+  
+/* 토요일 날짜: 파란색 */
+.fc-day-sat a {
+    color: blue;
+}
+
+/* 오늘 날짜 배경색 파란색으로 변경 */
+:root {
+	--fc-today-bg-color: rgb(200 225 255);
+}
+
+/*title 옆에 점*/
+.fc-daygrid-event-dot{
+	color: red;
+}
+
+/* 모달 가운데 정렬 */
+.modal-content{
+	transform: translate(-50%, 23%);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+}
+</style>
+<head>
+<script>
+// 전역 변수
+var schulCode = "${SCHOOL_USER_INFO.schulCode}";
+
+// FullCalendar API
+$(document).ready(function() {
+    // 페이지가 로드될 때 실행
+    $(function() {
+        var request = $.ajax({
+            url: "/school/scheduleList",
+            method: "GET",
+            dataType: "json"
+        });
+        
+        // 데이터를 가져오는 요청이 완료되었을 때 실행
+        request.done(function(data) {
+            console.log("data", data);
+            
+            // FullCalendar를 생성하고 설정하는 부분
+            var calendarEl = document.getElementById('calendar'); // 캘린더의 DOM 요소를 가져옴
+            calendar = new FullCalendar.Calendar(
+                calendarEl, {
+	            	googleCalendarApiKey: 'AIzaSyCfJJJRMweKP_Mca-rRJDBvpdLXANPHS14', // (구글 캘린더 API) API Key
+                    height: '700px', // 캘린더의 높이 설정
+                    headerToolbar: { // 캘린더의 헤더 표시 설정
+                        left: 'prev,next,today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                    },
+                    initialView: 'dayGridMonth', 	// 캘린더 초기 뷰 설정
+                    navLinks: true, 				// 날짜를 선택하면 Day 캘린더에 링크
+                    editable: true, 				// 캘린더 내 일정을 편집 가능하도록 설정
+                    selectable: true, 				// 달력 일자를 드래그하여 일정을 선택 가능하도록 설정
+                    droppable: true, 				// 드래그 가능한 요소를 캘린더에 떨어뜨릴 수 있도록 설정
+//                     events:	data,					// 캘린더에 표시할 일정 데이터 설정
+                    locale: 'ko', 					// 한국어 설정
+					eventSources : 					// (구글 캘린더 API) 한국 기념일 ko.south_korea 추가
+	                	[ { googleCalendarId : 'ko.south_korea#holiday@group.v.calendar.google.com'
+	                    , className : 'koHolidays'
+	                    , textColor: '#666'			// 글씨 색 설정
+	                    , backgroundColor: '#eee'	// 배경 색 설정
+	                    , borderColor: '#eee'} ],	// 테두리 색 설정
+                    eventDidMount: function(info) { // 캘린더 이벤트가 마운트된 후 실행
+                        $(".fc-event-time").hide();
+//                     	if(info.event == "")
+//                     	info.event.setProp('borderColor', '#fff');
+//                     	info.event.setProp('textColor', 'black');
+//                     	info.event.setProp('backgroundColor', '#fff');
+// 						$(".fc-event-title").css("color", "red");
+                    }, 
+                    /* 학사 일정 등록 */ 
+                    // 캘린더에서 일정을 선택했을 때 실행되는 함수
+                    select: function(arg) {
+                    	console.log(arg);
+                        $("#scheduleInsertModal").modal('show');
+                        
+                        var schdulNm = $("#schdulNm").val();
+                		var schdulBegin = dateFormat(arg.start);
+                		var schdulEnd = dateFormat(arg.end - 0.1);
+                		var schafsSchdulSe = $("#schafsSchdulSe").val();
+                		
+                		$("#schdulBegin").val(schdulBegin);
+                		$("#schdulEnd").val(schdulEnd);
+                        
+                    },
+
+                    // 캘린더에서 일정을 드래그하여 이동했을 때 실행되는 함수
+                    eventDrop: function(info) {
+                        // 사용자에게 일정 수정 여부 확인
+                        if (confirm("'" + info.event.title + "'일정을 수정하시겠습니까?")) {
+                            var events = []; // 수정된 일정 데이터를 담을 배열
+                            var obj = {
+                                title: info.event._def.title,
+                                start: info.event._instance.range.start,
+                                end: (info.event._instance.range.end - 1),
+                                oldTitle: info.oldEvent._def.title,
+                                oldStart: info.oldEvent._instance.range.start,
+                                oldEnd: info.oldEvent._instance.range.end
+                            };
+                            events.push(obj); // 수정된 일정 데이터를 배열에 추가
+                            console.log(events);
+                        }
+
+                        // 수정된 일정 데이터를 서버에 전송하는 함수 호출
+//                         modifyData(events);
+                    },
+
+                    // 일정의 크기를 변경했을 때 실행되는 함수
+                    eventResize: function(info) {
+                        console.log(info);
+
+                        // 사용자에게 일정 시간 변경 여부 확인
+                        if (confirm("'" + info.event.title + "'의 시간을 변경하시겠습니까?'")) {
+                            var events = []; // 변경된 일정 데이터를 담을 배열
+                            var obj = {
+                                title: info.event._def.title,
+                                start: info.event._instance.range.start,
+                                end: info.event._instance.range.end,
+                                oldTitle: info.oldEvent._def.title,
+                                oldStart: info.oldEvent._instance.range.start,
+                                oldEnd: info.oldEvent._instance.range.end
+                            };
+                            events.push(obj); // 변경된 일정 데이터를 배열에 추가
+                            console.log(events);
+                        }
+
+                        // 변경된 일정 데이터를 서버에 전송하는 함수 호출
+                        modifyData(events);
+                    },
+
+                    // 캘린더에서 일정을 클릭했을 때 실행되는 함수
+                    eventClick: function(info) {
+                        if (confirm("'" + info.event.title + "'을 삭제하시겠습니까?")) {
+                            // 일정을 삭제하고 캘린더에서 제거
+                            info.event.remove();
+                        }
+                        console.log(info.event);
+                        var events = []; // 삭제된 일정 데이터를 담을 배열
+                        var obj = {
+                            title: info.event._def.title,
+                            start: info.event._instance.range.start
+                        };
+                        events.push(obj); // 삭제된 일정 데이터를 배열에 추가
+                        console.log(events);
+
+                        // 삭제된 일정 데이터를 서버에 전송하는 함수 호출
+                        deleteData(events);
+                    }
+                });
+            
+            // 서버에서 받아온 데이터를 FullCalendar의 이벤트 형식으로 변환하여 events 배열에 추가
+            $.each(data, function(idx, scheduleList) {
+                calendar.addEvent({
+                    title: scheduleList.title,
+                    start: scheduleList.start,  // 시작일
+                    end: scheduleList.end,      // 종료일
+                    backgroundColor: 'rgb(0, 185, 186)',
+                    borderColor: 'rgb(0, 185, 186)',
+                    textColor: "#fff"
+                });
+            });
+
+            calendar.render(); // 캘린더를 렌더링
+        });
+    });
+    
+    /* 학사 일정 등록 */
+    $("#insertBtn").on("click", function(){
+		var schdulNm = $("#schdulNm").val();
+		var schdulCn = $("#schdulCn").val();
+		var schdulBegin = $("#schdulBegin").val();
+		var schdulEnd = $("#schdulEnd").val();
+		console.log("schdulNm:" + schdulNm);
+		console.log("schdulCn:" + schdulCn);
+		console.log("schdulBegin:" + schdulBegin);
+		console.log("schdulEnd:" + schdulEnd);
+		
+		var data = {
+			"schafsSchdulNm":schdulNm,
+			"schafsSchdulCn":schdulCn,
+			"schafsSchdulBgnde":schdulBegin,
+			"schafsSchdulEndde":schdulEnd,
+			"schulCode":schulCode
+		};
+
+		$.ajax({
+			url:"/school/scheduleInsert",
+			contentType:"application/json;charset=utf-8",
+			type: "post",
+			data: JSON.stringify(data),
+			dataType: "json",
+			beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+			success:function(res){
+				alert("일정 등록이 완료되었습니다.");
+			}
+		})
+    });
+    
+    /* 학사 일정 radio버튼 처리  */
+    $(".scheduleSe").on("click", function(){
+//     	alert("왔냐?");
+		$("input[name='scheduleRadio']").attr('checked');
+    });
+});
+</script>
+</head>
+
+<!-- fullCalendar가 들어갈 Div -->
+<div id="calendar"></div>
+
+<!-- 학사 일정 등록 모달 -->
+<div id="scheduleInsertModal" class="modal modal-edu-general default-popup-PrimaryModal fade"
+	role="dialog">
+	<div class="modal-dialog">
+		<div class="modal-content" style="width: 450px;">
+			<div class="modal-close-area modal-close-df">
+				<a class="close" data-dismiss="modal" href="#"> <i
+					class="fa fa-close"></i></a>
+			</div>
+			<div class="modal-body">
+				<h2>학사 일정 등록</h2>
+				<br>
+				<div id="inputChk" class="alert alert-danger alert-mg-b" role="alert" style="display: none;">
+					
+				</div>
+				<div id="UpdateScheduleContainer">
+					<ul class="InputSchedule">
+						<li><span>일정 명</span>
+						<input name="schdulNm" id="schdulNm" type="text" class="form-control inputSchedule"></li>
+						<li><span>일정 시작일</span>
+						<input name="schdulBegin" id="schdulBegin" type="text" class="form-control inputSchedule" readonly></li>
+						<li><span>일정 종료일</span>
+						<input name="schdulEnd" id="schdulEnd" type="text" class="form-control inputSchedule" readonly></li>
+						<li><span>일정 구분</span>
+						<div style="height: 40px; align-content: center;">
+							<span class="scheduleSe"><input name="scheduleRadio" type="radio">학생</span>
+							<span class="scheduleSe"><input name="scheduleRadio" type="radio">학부모</span>
+							<span class="scheduleSe"><input name="scheduleRadio" type="radio">교직원</span>
+							<span class="scheduleSe"><input name="scheduleRadio" type="radio">공통</span>
+						</div>
+					</ul>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<a class="modDelBtn" id="insertBtn">등록</a>
+				<a data-dismiss="modal" href="#" id="closeBtn">닫기</a>
+			</div>
+		</div>
+	</div>
+</div>

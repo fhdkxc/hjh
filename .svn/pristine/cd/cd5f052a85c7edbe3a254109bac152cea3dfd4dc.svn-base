@@ -1,0 +1,274 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<%@ page import="java.util.List"%>
+<%@ page import="kr.or.ddit.vo.SchafsSchdulVO"%>
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales-all.js"></script>
+
+<script src="/resources/kiaalap/js/datepicker/datepicker-active.js"></script>
+<script src="/resources/kiaalap/js/datepicker/jquery-ui.min.js"></script>
+<head>
+<script>
+$(function(){
+	// 학사 일정 등록
+	$("#UpdateScheduleBtn").on("click", function(){
+		// 입력한 값 가져오기
+		var schdulNm = $("#schdulNm").val();
+		var schdulCn = $("#schdulCn").val();
+		var schdulBegin = $("#schdulBegin").val();
+		var schdulEnd = $("#schdulEnd").val();
+		
+		console.log("schdulNm:" + schdulNm);
+		console.log("schdulCn:" + schdulCn);
+		console.log("schdulBegin:" + schdulBegin);
+		console.log("schdulEnd:" + schdulEnd);
+		
+		var data = {
+			"schdulNm":schdulNm,
+			"schdulCn":schdulCn,
+			"schdulBegin":schdulBegin,
+			"schdulEnd":schdulEnd
+		};
+		
+// 		$.ajax({
+// 			url:"/school/scheduleUpdate",
+// 			contentType:"application/JSON;charset=utf-8",
+// 			data: JSON.stringify(data),
+// 			dataType: "text",
+// 			type: "post",
+// 			success: function(res){
+				
+// 			}
+// 		});
+		
+	});
+	
+});
+
+// FullCalendar API
+$(document).ready(function() {
+    // 페이지가 로드될 때 실행
+    $(function() {
+        var request = $.ajax({
+            url: "/school/scheduleSelect",
+            method: "GET",
+            dataType: "json"
+        });
+        
+        // 데이터를 가져오는 요청이 완료되었을 때 실행
+        request.done(function(data) {
+            console.log(data);
+
+            // FullCalendar를 생성하고 설정하는 부분
+            var calendarEl = document.getElementById('calendar'); // 캘린더의 DOM 요소를 가져옴
+            calendar = new FullCalendar.Calendar(
+                calendarEl, {
+                    height: '700px', // 캘린더의 높이 설정
+                    slotMinTime: '06:00', // Day 캘린더의 시작 시간
+                    slotMaxTime: '25:00', // Day 캘린더의 종료 시간
+
+                    // 캘린더의 헤더 표시 설정
+                    headerToolbar: {
+                        left: 'prev,next,today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                    },
+                    
+                    initialView: 'dayGridMonth', // 캘린더 초기 뷰 설정
+                    navLinks: true, // 날짜를 선택하면 Day 캘린더에 링크
+                    editable: true, // 캘린더 내 일정을 편집 가능하도록 설정
+                    selectable: true, // 달력 일자를 드래그하여 일정을 선택 가능하도록 설정
+                    droppable: true, // 드래그 가능한 요소를 캘린더에 떨어뜨릴 수 있도록 설정
+                    events: data, // 캘린더에 표시할 일정 데이터 설정
+                    locale: 'ko', // 한국어 설정
+//                     select: selectHandler, // 캘린더에서 드래그로 이벤트를 생성할 수 있음
+//                     eventDrop: eventDropHandler, // 드래그로 이벤트 수정하기
+                    eventDidMount: function(info) { // 캘린더 이벤트가 마운트된 후 실행
+                        $(".fc-event-time").hide();
+                    }, 
+                    // 캘린더에서 일정을 선택했을 때 실행되는 함수
+                    select: function(arg) {
+//                      var title = prompt('일정을 입력해주세요.'); // 사용자에게 일정 입력 받음
+                        $("#updateScheduleModal").modal('show');
+                        
+                		var schdulNm = $("#schdulNm").val();
+                		var schdulCn = $("#schdulCn").val();
+                		
+                		console.log("schdulNm:" + schdulNm);
+                		console.log("schdulCn:" + schdulCn);
+                		
+                		function dateFormat(date){
+                			var selectDate = new Date(date);
+                			var d = selectDate.getDate();
+                			var m = selectDate.getMonth() + 1;
+                			var y = selectDate.getFullYear();
+                			
+                			if(m < 10) m = "0" + m;
+                			
+                			return y + "-" + m + "-" + d; 
+                		}
+                		
+                		var schdulBegin = dateFormat(arg.start);
+                		var schdulEnd = dateFormat(arg.end);
+                		
+                		$("#schdulBegin").val(schdulBegin);
+                		$("#schdulEnd").val(schdulEnd);
+                		
+                		var data = {
+                			"schdulNm":schdulNm,
+                			"schdulCn":schdulCn,
+                			"schdulBegin":schdulBegin,
+                			"schdulEnd":schdulEnd
+                		};
+                        
+                        // 사용자가 입력한 일정이 있을 경우
+                        if (title) {
+                            // 캘린더에 일정 추가
+                            calendar.addEvent({
+                                title: title,
+                                start: arg.start,
+                                end: arg.end,
+                                allDay: arg.allDay
+                            });
+                            
+                            $(".fc-event-time").hide();
+                            $(".fc-event-title-container").css("background-color", "pink");
+                        } else {
+                            location.reload(); // 페이지 새로고침
+                            return;
+                        }
+
+                        // 일정 데이터를 서버에 저장하는 함수 호출
+                        saveData();
+                    },
+
+                    // 캘린더에서 일정을 드래그하여 이동했을 때 실행되는 함수
+                    eventDrop: function(info) {
+                        // 사용자에게 일정 수정 여부 확인
+                        if (confirm("'" + info.event.title + "'일정을 수정하시겠습니까?")) {
+                            var events = []; // 수정된 일정 데이터를 담을 배열
+                            var obj = {
+                                title: info.event._def.title,
+                                start: info.event._instance.range.start,
+                                end: info.event._instance.range.end,
+                                oldTitle: info.oldEvent._def.title,
+                                oldStart: info.oldEvent._instance.range.start,
+                                oldEnd: info.oldEvent._instance.range.end
+                            };
+                            events.push(obj); // 수정된 일정 데이터를 배열에 추가
+                            console.log(events);
+                        } else {
+                            location.reload(); // 페이지 새로고침
+                        }
+
+                        // 수정된 일정 데이터를 서버에 전송하는 함수 호출
+                        modifyData(events);
+                    },
+
+                    // 일정의 크기를 변경했을 때 실행되는 함수
+                    eventResize: function(info) {
+                        console.log(info);
+
+                        // 사용자에게 일정 시간 변경 여부 확인
+                        if (confirm("'" + info.event.title + "'의 시간을 변경하시겠습니까?'")) {
+                            var events = []; // 변경된 일정 데이터를 담을 배열
+                            var obj = {
+                                title: info.event._def.title,
+                                start: info.event._instance.range.start,
+                                end: info.event._instance.range.end,
+                                oldTitle: info.oldEvent._def.title,
+                                oldStart: info.oldEvent._instance.range.start,
+                                oldEnd: info.oldEvent._instance.range.end
+                            };
+                            events.push(obj); // 변경된 일정 데이터를 배열에 추가
+                            console.log(events);
+                        } else {
+                            location.reload(); // 페이지 새로고침
+                        }
+
+                        // 변경된 일정 데이터를 서버에 전송하는 함수 호출
+                        modifyData(events);
+                    },
+
+                    // 캘린더에서 일정을 클릭했을 때 실행되는 함수
+                    eventClick: function(info) {
+                        if (confirm("'" + info.event.title + "'을 삭제하시겠습니까?")) {
+                            // 일정을 삭제하고 캘린더에서 제거
+                            info.event.remove();
+                        }
+                        console.log(info.event);
+                        var events = []; // 삭제된 일정 데이터를 담을 배열
+                        var obj = {
+                            title: info.event._def.title,
+                            start: info.event._instance.range.start
+                        };
+                        events.push(obj); // 삭제된 일정 데이터를 배열에 추가
+                        console.log(events);
+
+                        // 삭제된 일정 데이터를 서버에 전송하는 함수 호출
+                        deleteData(events);
+                    }
+                }
+            );
+
+            calendar.render(); // 캘린더를 렌더링
+        });
+    });
+});
+</script>
+<title>Full Calendar</title>
+</head>
+<body>
+<div id="calendar"></div>
+
+
+<!-- 학사 일정 등록 모달 띄우기 -->
+<form id="updateScheduleForm" action="/student/updatePassword" method="post">
+	<div id="updateScheduleModal"
+		class="modal modal-edu-general default-popup-PrimaryModal fade"
+		role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-close-area modal-close-df">
+					<a class="close" data-dismiss="modal" href="#"> <i
+						class="fa fa-close"></i></a>
+				</div>
+				<div class="modal-body">
+					<h2>학사 일정 등록</h2>
+					<br>
+					<div id="inputChk" class="alert alert-danger alert-mg-b" role="alert" style="display: none;">
+						
+					</div>
+					<div id="UpdateScheduleContainer">
+						<ul class="InputSchedule">
+							<li><span>일정 명</span>
+							<input name="schdulNm" id="schdulNm" type="text" class="form-control"></li>
+							<br>
+							<li><span>일정 내용</span>
+							<textarea name="schdulCn" id="schdulCn" class="form-control"></textarea>
+							<br>
+							<li><span>일정 시작일</span>
+							<input name="schdulBegin" id="schdulBegin" type="text" class="form-control hasDatepicker" placeholder="일자를 선택하세요"></li>
+							<br>
+							<li><span>일정 종료일</span>
+							<input name="schdulEnd" id="schdulEnd" type="text" class="form-control hasDatepicker" placeholder="일자를 선택하세요"></li>
+						</ul>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a id="UpdateScheduleBtn" href="#">수정</a>
+					<a id="cancelScheduleBtn" data-dismiss="modal" href="#" onclick="location.reload();">취소</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</form>
+</body>
+</html>
+

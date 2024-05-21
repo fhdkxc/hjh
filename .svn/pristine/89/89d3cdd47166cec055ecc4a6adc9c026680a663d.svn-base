@@ -1,0 +1,83 @@
+package kr.or.ddit.classroom.service.impl;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.classroom.mapper.DiaryMapper;
+import kr.or.ddit.classroom.service.DiaryService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.DiarySearchVO;
+import kr.or.ddit.vo.NttVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class DiaryServiceImpl implements DiaryService {
+	
+	@Autowired
+	DiaryMapper diaryMapper;
+
+	// 일기장  쓰기에서 날씨를 불러오기위해 학교가 소속된 지역을 가져오는 메서드
+	@Override
+	public String getSchulArea(String schulCode) {
+		String area = this.diaryMapper.getSchulArea(schulCode);
+		
+		switch (area.trim()) {
+			case "서울특": case "서울": 	area = "seoul"; break;
+			case "부산광": case "부산": 	area = "busan"; break;
+			case "대구광": case "대구": 	area = "daegu"; break;
+			case "인천광": case "인천": 	area = "incheon"; break;
+			case "광주광": case "광주": 	area = "gwangju"; break;
+			case "대전광": case "대전": 	area = "daejeon"; break;
+			case "울산광": case "울산":	area = "ulsan"; break;
+			case "세종특": case "세종": 	area = "sejong"; break;
+			case "경기도": 				area = "gyeonggi-do"; break;
+			case "강원도": 				area = "gangwon-do"; break;
+			case "충청북": 				area = "chungcheongbuk-do"; break;
+			case "충청남": 				area = "chungcheongnam-do"; break;
+			case "전라북": case "전북": 	area = "jeollabuk-do"; break;
+			case "전라남": case "전남": 	area = "jeollanam-do"; break;	
+			case "경상북": case "경북": 	area = "gyeongsangbuk-do"; break;
+			case "경상남": case "경남": 	area = "gyeongsangnam-do"; break;	
+			case "제주특": case "제주": 	area = "jeju-do"; break;	
+			default: break;
+		}
+		
+		return area;
+	}
+
+	// 일기장 등록
+	@Override
+	public int addDiaryAct(HttpServletRequest request, NttVO nttVO) {
+		ClasStdntVO clasStdntVO = (ClasStdntVO) request.getSession().getAttribute("CLASS_STD_INFO");
+		nttVO.setMberId(clasStdntVO.getMberId());
+		nttVO.setClasCode(clasStdntVO.getClasCode());
+		nttVO.setSchulCode(clasStdntVO.getSchulCode());
+		
+		int result = this.diaryMapper.addDiaryAct(nttVO);
+		return result;
+	}
+
+	// 일기장 목록 불러오기
+	@Override
+	public ArticlePage<NttVO> getDiaryList(DiarySearchVO diarySearchVO) {
+		String keyword = diarySearchVO.getKeyword();
+		int currentPage = diarySearchVO.getCurrentPage();
+		int size = diarySearchVO.getSize();
+		int diaryTotal = this.diaryMapper.getDiaryTotal(diarySearchVO);
+		
+		List<NttVO> nttVOList = this.diaryMapper.getDiaryList(diarySearchVO);
+		
+		log.debug("getDiaryList diaryTotal => " + diaryTotal);
+		log.debug("getDiaryList nttVOList => " + nttVOList);
+		 
+		ArticlePage<NttVO> nttPage = new ArticlePage<NttVO>(currentPage, size, nttVOList, keyword, diaryTotal);
+		return nttPage;
+	}
+
+}

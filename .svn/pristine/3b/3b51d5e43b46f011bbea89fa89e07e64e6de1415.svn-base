@@ -1,0 +1,73 @@
+package kr.or.ddit.school.service;
+
+import java.util.List;
+import java.util.Map;
+
+
+import kr.or.ddit.vo.NttVO;
+import kr.or.ddit.vo.SchafsSchdulVO;
+import kr.or.ddit.vo.SchulVO;
+
+
+public interface SchoolService {
+	
+	//학교 공지사항 게시판 목록
+	public String notice();
+	
+	//학교 교육정보 게시판 
+	public String eduInfo();
+	
+	//자료실 게시판 조회
+	public List<NttVO> dataRoom(Map<String, Object> map);
+	
+	//자료실 상세조회
+	public NttVO dataRoomDetail(String nttCode);
+	
+	//자료실 게시판 생성
+	public int dataRoomCreate(NttVO nttVO);
+	
+	//자료실 게시판 삭제
+	public int dataRoomDeleteAjax(String nttCode);
+
+	//자료실 게시판 수정
+	public int dataRoomUpdateAjax(NttVO nttVO);
+	
+	// 자료실 총 게시물 수
+	public int dataRoomGetTotal(Map<String, Object> map);
+		
+	//급식
+	public String meal();
+	
+	// 학사일정 등록
+	public int scheduleInsert(SchafsSchdulVO schedule);
+
+	// 학사일정 조회
+	public List<SchafsSchdulVO> scheduleSelect();
+
+	// 학사일정 삭제
+	public int scheduleDelete(String start);
+
+	// 학사일정 수정
+	public int scheduleUpdate(SchafsSchdulVO schedule);
+	
+	//시간표
+	public String schedule();
+	
+	//학생(전교생) 관리 
+	public String studentsManage();
+	
+	//방과후학교
+	public String afterSchool();
+	
+	//학급 클래스 목록
+	public String classList();
+	
+	// 학교 목록
+	public List<SchulVO> schoolList(Map<String, Object> map);
+
+	// 학교 목록 전체 글 수
+	public int schoolGetTotal(Map<String, Object> map);
+
+	// 자료실 게시판 조회수 증가
+	public int totalViews(NttVO nttVO);
+}

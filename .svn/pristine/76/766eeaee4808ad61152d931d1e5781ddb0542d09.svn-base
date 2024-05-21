@@ -1,0 +1,26 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+
+<!DOCTYPE html>
+<html>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<head>
+<title></title>
+</head>
+<body>
+	<form method="post" id="smsForm" action = "/sms/sendSms.do">
+	   <ul>
+	     <!-- <li>수신자 : <input type="text" name="from"/></li>
+	     <li>내용 : <textarea name="text"></textarea></li> -->
+	     <li><input type="button" onclick="sendSMS()" value="문자 전송" /></li>
+	  </ul>
+	  <sec:csrfInput />
+	</form>
+	<script>
+	function sendSMS(){
+		console.log("문자를 전송합니다.");
+		$("#smsForm").submit();
+	}
+	</script>
+</body>
+</html>

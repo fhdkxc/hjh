@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.util.mapper.CheckMapper">
+
+<select id ="checkBelongClStd" parameterType ="hashMap" resultType ="clasStdntVO">
+	select 	CLAS_STDNT_CODE, CLAS_IN_NO, CMMN_STDNT_CLSF, CMMN_CLAS_PSITN_STTUS, CLAS_CODE, SCHUL_CODE, MBER_ID
+	from 	clas_stdnt
+	where 	mber_id = #{mberId}
+	and 	clas_code = #{clasCode}
+</select>
+
+<select id ="checkBelongClTch" parameterType ="hashMap" resultType ="hrtchrVO">
+	select 	CLAS_CODE, SCHUL_CODE, MBER_ID, CMMN_DETAIL_CODE
+	from 	hrtchr
+	where 	mber_id = #{mberId}
+	and 	clas_code = #{clasCode}
+</select>
+
+</mapper>

@@ -1,0 +1,117 @@
+package kr.or.ddit.util.controller;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.util.service.SessionService;
+
+/*
+ * 세션을 관리하는 컨트롤러
+ * 반/학교 관련 페이지에 접근 및 퇴장했을 때 반/학교 관련 세션을 관리한다.
+ * 
+ * 함수 목록 :
+ * enterClassPageAjax  : 반 관련 페이지에 접속했을 때 반/반학생or담임교사or자녀정보 정보를 세션에 저장한다.
+ * enterSchoolPageAjax : 학교 관련 페이지에 접속했을 때 학교/학교소속회원 정보를 세션에 저장한다.
+ * quitClassPageAjax   : 반 관련 페이지에서 벗어났을 때  반/반학생or담임교사or자녀정보 정보를 세션에서 삭제한다.
+ * quitSchoolPageAjax  : 학교 관련 페이지에서 벗어났을 때  학교/학교소속회원 정보를 세션에서 삭제한다.
+ * 
+ * 사용 방법 :
+ * secSession.jsp 참조
+ */
+
+/*
+ * 세션명
+ * USER_INFO        회원(로그인중인)
+ * CLASS_STD_INFO   반학생(접속중인 반의)
+ * CLASS_TCH_INFO   담임교사(접속중인 반의)
+ * CLASS_INFO       반(접속중인)
+ * SCHOOL_INFO      학교(접속중인)
+ * SCHOOL_USER_INFO 학교소속회원(접속중인)
+ */
+
+@Controller
+@RequestMapping("/session")
+public class SessionController {
+
+	@Autowired
+	SessionService sessionService; 
+	
+	//반 페이지 입장 ajax 
+	@PostMapping("/enterClassPageAjax")
+	public int enterClassPageAjax(HttpServletRequest request, @RequestBody String clasCode) {
+		return sessionService.enterClassPageAjax(request,clasCode);
+	}
+
+	// 반 페이지 퇴장 ajax 
+	@PostMapping("/quitClassPageAjax")
+	public int quitClassPageAjax(HttpServletRequest request) {
+		return sessionService.quitClassPageAjax(request);
+	}
+	
+	// 학교 페이지 입장 ajax 
+	@PostMapping("/enterSchoolPageAjax")
+	public int enterSchoolPageAjax(HttpServletRequest request, @RequestBody String schulCode) {
+		return sessionService.enterSchoolPageAjax(request,schulCode);
+	}
+	
+	// 학교 페이지 퇴장 ajax 
+	@PostMapping("/quitSchoolPageAjax")
+	public int quitSchoolPageAjax(HttpServletRequest request) {
+		return sessionService.quitSchoolPageAjax(request);
+	}
+	
+	// 1차 권한 학생인지 확인
+	@ResponseBody
+	@PostMapping("/isStudent")
+	public Boolean isStudent(HttpServletRequest request) {
+		return sessionService.isStudent(request);
+	}
+	
+	// 1차 권한 교직원인지 확인
+	@ResponseBody
+	@PostMapping("/isEmployee")
+	public Boolean isEmployee(HttpServletRequest request) {
+		return sessionService.isEmployee(request);
+	}
+
+	// 1차 권한 학부모인지 확인
+	@ResponseBody
+	@PostMapping("/isParent")
+	public Boolean isParent(HttpServletRequest request) {
+		return sessionService.isParent(request);
+	}
+
+	// 교직원 권한 교장인지 확인
+	@ResponseBody
+	@PostMapping("/isPrincipal")
+	public Boolean isPrincipal(HttpServletRequest request) {
+		return sessionService.isPrincipal(request);
+	}
+	
+	// 교직원 권한 교사인지 확인
+	@ResponseBody
+	@PostMapping("/isTeacher")
+	public Boolean isTeacher(HttpServletRequest request) {
+		return sessionService.isTeacher(request);
+	}
+	
+	// 교직원 권한 행정인지 확인
+	@ResponseBody
+	@PostMapping("/isAdministration")
+	public Boolean isAdministration(HttpServletRequest request) {
+		return sessionService.isAdministration(request);
+	}
+	
+	// 교직원 권한 영양사인지 확인
+	@ResponseBody
+	@PostMapping("/isDietitian")
+	public Boolean isDietitian(HttpServletRequest request) {
+		return sessionService.isDietitian(request);
+	}
+}

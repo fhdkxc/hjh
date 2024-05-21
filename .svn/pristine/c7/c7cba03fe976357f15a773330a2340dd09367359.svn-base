@@ -1,0 +1,28 @@
+package kr.or.ddit.util.service;
+
+import javax.servlet.http.HttpServletRequest;
+
+public interface SessionService {
+
+	int enterClassPageAjax(HttpServletRequest request, String clasCode);
+
+	int quitClassPageAjax(HttpServletRequest request);
+
+	int enterSchoolPageAjax(HttpServletRequest request, String schulCode);
+
+	int quitSchoolPageAjax(HttpServletRequest request);
+
+	Boolean isStudent(HttpServletRequest request);
+
+	Boolean isEmployee(HttpServletRequest request);
+	
+	Boolean isParent(HttpServletRequest request);
+
+	Boolean isPrincipal(HttpServletRequest request);
+
+	Boolean isTeacher(HttpServletRequest request);
+
+	Boolean isAdministration(HttpServletRequest request);
+
+	Boolean isDietitian(HttpServletRequest request);
+}

@@ -1,0 +1,261 @@
+@charset "UTF-8";
+
+/*
+부트스트랩 충돌 방지를 위해 모든 이름 앞에 두들을 뜻하는 "d-" 추가
+*/
+
+:root {
+	/*
+	색상 변수
+	
+	사용 방법 : 
+	background-color : var(--sub-color);
+	*/
+	/*파랑*/
+	--main-color           : #006DF0;
+	--main-color-dark      : #005Dd0;
+	--main-color-deep-dark : #0c4c9c;
+	/*노랑*/
+	--sub-color            : #FCC25B;
+	--sub-color-dark       : #F1B64E;
+	--sub-color-deep-dark  : #E8AD44;
+	/*검정*/              
+	--sub2-color           : #262626;
+	--sub2-color-dark      : #1f1f1f;
+	--sub2-color-deep-dark : #121212;
+	/*흰색(폰트 등)*/              
+	--white-color           : #ffffff;
+	--white-color-few-dark  : #efefef;
+	--white-color-dark      : #dfdfdf;
+	--white-color-deep-dark : #bfbfbf;
+	/*회색(종료, 비활성화, 없음 등)*/
+	--gray-color           : #cccccc;
+	--gray-color-dark      : #acacac;
+	--gray-color-deep-dark : #959595;
+	/*빨강(금지, 삭제, 불가 등)*/
+	--red-color            : #df3c3c;
+	--red-color-dark       : #bc3b3b;
+	--red-color-deep-dark  : #993a3a;
+	/*녹색(성공, 완료) 등*/
+	--green-color          : #96DB5B;
+	--green-color-dark     : #8AC954;
+	--green-color-deep-dark: #80BA4F;
+	
+	/*btn style*/
+	--d-btn-border-radius : 5px;
+	--d-btn-text-align    : center;
+	--d-btn-vertical-align: middle;
+	--d-btn-border        : none;
+	--d-btn-font-weight   : 550;
+	--d-btn-padding       : 6px 12px;
+	--d-btn-color         : var(--white-color);
+}
+
+/*
+<button> 요소 스타일.
+<div> 에 쓰면 버튼처럼 보이게 함.
+*/
+.d-btn {
+	border-radius : 5px;
+	text-align: center;
+	vertical-align: middle;
+	border: none;
+	font-weight: 550;
+	padding:6px 12px;
+}
+
+/*
+<button> 색상 변경
+
+사용 방법 :
+<button class = "d-btn-blue">
+*/
+.d-btn-blue {
+	background-color : var(--main-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);         
+}
+.d-btn-blue:hover{
+	background-color : var(--main-color-dark);
+	color: var(--white-color-dark);
+}
+.d-btn-blue:active{
+	background-color : var(--main-color-deep-dark);
+	color: var(--white-color-deep-dark);
+}
+.d-btn-yellow {
+	background-color : var(--sub-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-btn-yellow:hover {
+	background-color : var(--sub-color-dark);
+	color: var(--white-color-few-dark);
+}
+.d-btn-yellow:active {
+	background-color : var(--sub-color-deep-dark);
+	color: var(--white-color-dark);
+}
+.d-btn-black {
+	background-color : var(--sub2-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-btn-black:hover {
+	background-color : var(--sub2-color-dark);
+	color: var(--white-color-dark);
+}
+.d-btn-black:active {
+	background-color : var(--sub2-color-deep-dark);
+	color: var(--white-color-deep-dark);
+}
+.d-btn-gray {
+	background-color : var(--gray-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-btn-gray:hover {
+	background-color : var(--gray-color-dark);
+	color: var(--white-color-few-dark);
+}
+.d-btn-gray:active {
+	background-color : var(--gray-color-deep-dark);
+	color: var(--white-color-dark);
+}
+.d-btn-red {
+	background-color : var(--red-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-btn-red:hover {
+	background-color : var(--red-color-dark);
+	color: var(--white-color-dark);
+}
+.d-btn-red:active {
+	background-color : var(--red-color-deep-dark);
+	color: var(--white-color-deep-dark);
+}
+.d-btn-green {
+	background-color : var(--green-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-btn-green:hover {
+	background-color : var(--green-color-dark);
+	color: var(--white-color-few-dark);
+}
+.d-btn-green:active {
+	background-color : var(--green-color-deep-dark);
+	color: var(--white-color-dark);
+}
+
+/*
+<div> 색상 변경
+
+사용 방법 :
+<button class = "d-div-blue">
+*/
+.d-div-blue {
+	background-color : var(--main-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-div-yellow {
+	background-color : var(--sub-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-div-black {
+	background-color : var(--sub2-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-div-gray {
+	background-color : var(--gray-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-div-red {
+	background-color : var(--red-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+.d-div-green {
+	background-color : var(--green-color);
+	border-radius    : var(--d-btn-border-radius);
+	text-align       : var(--d-btn-text-align);    
+	vertical-align   : var(--d-btn-vertical-align);
+	border           : var(--d-btn-border);        
+	font-weight      : var(--d-btn-font-weight);   
+	padding          : var(--d-btn-padding);       
+	color            : var(--d-btn-color);    
+}
+
+/*
+마우스 올려놓은 <tr> 색상 변경
+
+사용 방법 :
+<tr class = "d-tr">
+*/
+.d-tr:hover {
+	background-color: #f5f5f5;
+}
+.d-tr:active {
+	background-color: #efefef;
+}
+

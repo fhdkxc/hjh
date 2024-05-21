@@ -1,0 +1,261 @@
+package kr.or.ddit.school.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.school.service.AfterSchoolService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.AschaDclzVO;
+import kr.or.ddit.vo.AschaVO;
+import kr.or.ddit.vo.AtnlcReqstVO;
+import lombok.extern.slf4j.Slf4j;
+
+@RequestMapping("/afterSchool")
+@Slf4j
+@Controller
+public class AfterSchoolController {
+	
+	@Autowired
+	AfterSchoolService afterSchoolService;
+	
+	//방과후학교 목록
+	@GetMapping
+	public String afterSchool(@RequestParam(value="schulCode", required=false) String schulCode) {
+//		afterSchool->schulCode : 7581092
+		log.info("afterSchool->schulCode : " + schulCode);
+//		model.addAttribute("schulCode", schulCode);
+		return "afterSchool/afterSchoolList";
+	}
+	
+	// 방과후학교 목록 ajax
+	// /afterSchool?currentPage=2&keyword=
+	@ResponseBody
+	@PostMapping("/afterSchoolList")
+	public ArticlePage<AschaVO> afterSchoolListAjax(@RequestBody Map<String, Object> map) {
+		//map : {currentPage=2, keyword=, schulCode=7581092}
+		log.info("afterSchoolListAjax->map : "+map);
+		
+		// 방과후학교 리스트
+		List<AschaVO> aschaVOList = this.afterSchoolService.afterSchoolList(map);
+		log.info("afterSchoolList -> aschaVOList : " + aschaVOList);
+		
+		// 전체 방과후학교 수
+		int total = this.afterSchoolService.getTotalAfterSchool(map);
+		//afterSchoolList -> total : 18
+		log.info("afterSchoolList -> total : " + total);
+		int size = 10;
+		
+		String keyword = map.get("keyword").toString();
+		log.info("afterSchoolList ->keyword : "+keyword);
+		
+		// 페이지네이션
+		ArticlePage<AschaVO> data = new ArticlePage<AschaVO>(total,
+				Integer.parseInt(map.get("currentPage").toString()), size, aschaVOList, keyword, map.get("schulCode").toString(), map.get("schulCode").toString());
+		
+		String url = "/afterSchool/afterSchoolList";
+		data.setUrl(url);
+		
+		log.info("aschaVOList : "+aschaVOList);
+		
+		return data;
+	}
+	
+	// 방과후학교 상세
+	@ResponseBody
+	@PostMapping("/afterSchoolDetail")
+	public List<AschaVO> afterSchoolDetail(@RequestBody AschaVO aschaVO) {
+		log.info("detail->aschaVO : "+aschaVO);
+		
+		// ajax에서 보낸 데이터
+		aschaVO.getSchulCode();
+		aschaVO.getAschaCode();
+		
+		List<AschaVO> aschaVOList = this.afterSchoolService.afterSchoolDetail(aschaVO);
+		
+		log.info("detail->aschaVOList : "+aschaVOList);
+		
+		return aschaVOList;
+	}
+	
+	// 방과후학교 생성
+	@GetMapping("/afterSchoolCreate")
+	public String afterSchoolCreate(@RequestParam(value="schulCode") String schulCode) {
+		
+		return "afterSchool/afterSchoolCreate";
+	}
+	
+	// 방과후학교 생성 ajax
+	@ResponseBody
+	@PostMapping("/afterSchoolCreateAjax")
+	public int afterSchoolCreateAjax(AschaVO aschaVO) {
+		/*
+		AschaVO(aschaCode=null, aschaNm=테스트임니다, aschaDetailCn=1, aschaAtnlcCt=2, aschaAceptncPsncpa=3, aschaAtnlcBgnde=Sat Mar 09 00:00:00 KST 2024, aschaAtnlcEndde=Fri Mar 22 00:00:00 KST 2024, schulCode=7581092, mberId=null, cmmnDetailCode=null, cmmnAtnlcNm=null, mberNm=null, schulNm=null, cmmnGrade=null, clasNm=null, clasInNo=null, 
+		aschaWeekPlanVOList=[
+			AschaWeekPlanVO(aschaWeekPlanCode=null, aschaWeek=1주, aschaWeekPlanCn=a, aschaCode=null), 
+			AschaWeekPlanVO(aschaWeekPlanCode=null, aschaWeek=2주, aschaWeekPlanCn=b, aschaCode=null), 
+			AschaWeekPlanVO(aschaWeekPlanCode=null, aschaWeek=3주, aschaWeekPlanCn=c, aschaCode=null), 
+			AschaWeekPlanVO(aschaWeekPlanCode=null, aschaWeek=4주, aschaWeekPlanCn=d, aschaCode=null)], 
+		atnlcReqstVOList=null)
+		 */
+		log.info("afterSchoolCreateAjax -> aschaVO : "+ aschaVO);
+		
+		int result = this.afterSchoolService.afterSchoolCreate(aschaVO);
+		log.info("afterSchoolCreateAjax -> result :" +result);
+		
+		return result;
+	}
+	
+	// 방과후학교 수정
+	@GetMapping("/afterSchoolUpdate")
+	public String afterSchoolUpdate(@RequestParam(value="aschaCode") String aschaCode,
+									@RequestParam(value="schulCode") String schulCode) {
+		return "afterSchool/afterSchoolUpdate";
+	}
+	
+	// 방과후학교 수정 ajax
+	@ResponseBody
+	@PostMapping("/afterSchoolUpdateAjax")
+	public int afterSchoolUpdateAjax(AschaVO aschaVO) {
+		log.info("afterSchoolUpdateAjax -> aschaVO : "+aschaVO);
+		
+		int result = this.afterSchoolService.afterSchoolUpdate(aschaVO);
+		log.info("afterSchoolUpdateAjax -> aschaVO" + aschaVO);
+		
+		return result;
+	}
+	
+	// 방과후학교 삭제
+	@ResponseBody
+	@PostMapping("/afterSchoolDelete")
+	public int afterSchoolDelete(@RequestBody AschaVO aschaVO) {
+		log.info("afterSchoolDelete -> aschaVO :" +aschaVO);
+		aschaVO.getAschaCode();
+		
+		int result = this.afterSchoolService.afterSchoolDelete(aschaVO);
+		log.info("afterSchoolDelete -> aschaCode! "+aschaVO);
+		
+		return result;
+	}
+	
+	// 방과후학교 관리 메인화면
+	@GetMapping("/afterSchoolMain")
+	public String afterSchoolMain(@RequestParam(value="mberId") String mberId,
+								  @RequestParam(value="schulCode") String schulCode) {
+		
+		return "afterSchool/afterSchoolMain";
+	}
+	
+	// 교사의 방과후화면 개설 목록
+	@ResponseBody
+	@GetMapping("/afterSchoolTeacherList")
+	public List<AschaVO> afterSchoolTeacherList(@RequestParam(value = "mberId") String mberId) {
+		log.info("afterSchoolTeacherList -> mberId :" + mberId);
+		List<AschaVO> aschaVOList = this.afterSchoolService.afterSchoolTeacherList(mberId);
+		log.info("aschaVOList :" + aschaVOList);
+
+		return aschaVOList;
+	}
+
+	// 과목당 수강중인 학생들
+	@ResponseBody
+	@PostMapping("/lectureStudentList")
+	public List<AschaVO> lectureStudentList(@RequestBody AschaVO aschaVO){
+		log.info("lectureStudentList -> aschaVO : "+aschaVO);
+		
+		List<AschaVO> atnlcReqstVOList=this.afterSchoolService.lectureStudentList(aschaVO);
+		log.info("atnlcReqstVOList : "+atnlcReqstVOList);
+		
+		return atnlcReqstVOList;
+	}
+	
+	// 수강신청 상태 변경
+	@ResponseBody
+	@PostMapping("/lectureStateUpdate")
+	public int lectureStateUpdate(@RequestBody AtnlcReqstVO atnlcReqstVO) {
+		log.info("lectureStateUpdate -> aschaVO : "+atnlcReqstVO);
+		
+		int result = this.afterSchoolService.lectureStateUpdate(atnlcReqstVO);
+		
+		return result;
+	}
+	
+	// 학생, 학부모 방과후학교 메인화면
+	@GetMapping("/afterSchoolStdntMain")
+	public String afterSchoolStdntMain(@RequestParam(value="mberId") String mberId) {
+		
+		return "afterSchool/afterSchoolStdntMain";
+	}
+	
+	// 학생이 수강신청한 방과후학교 목록
+	@ResponseBody
+	@GetMapping("/afterSchoolLectureList")
+	public List<AschaVO> afterSchoolLectureList(@RequestParam(value="mberId") String mberId){
+		log.info("afterSchoolLectureList -> mberId : "+ mberId);
+		List<AschaVO> aschaVOList = this.afterSchoolService.afterSchoolLectureList(mberId);
+		log.info("aschaVOList :" + aschaVOList);
+		
+		return aschaVOList;
+	}
+	
+	// 결제내역 insert
+	@ResponseBody
+	@PostMapping("/afterSchoolPayment")
+	public int afterSchoolPayment(@RequestBody AtnlcReqstVO atnlcReqstVO) {
+		log.info("atnlcReqstVO :" +atnlcReqstVO);
+		
+		int result = this.afterSchoolService.afterSchoolPayment(atnlcReqstVO);
+		log.info("afterSchoolPayment-> result : "+ result);
+		
+		return result;
+	}
+	
+	// 출석부 목록
+	@ResponseBody
+	@PostMapping("/attendanceList")
+	public List<AschaVO> attendanceList(@RequestBody AschaVO aschaVO){
+		log.info("attendanceList -> aschaVO : "+aschaVO);
+		List<AschaVO> atnlcReqstVOList=this.afterSchoolService.attendanceList(aschaVO);
+		
+		return atnlcReqstVOList;
+	}
+	
+	// 출결정보 등록
+	@ResponseBody
+	@PostMapping("/attendanceInsert")
+	public int attendanceInsert(@RequestBody AschaDclzVO aschaDclzVO) {
+		log.info("attendanceInsert -> aschaDclzVO : "+aschaDclzVO);
+		int result = this.afterSchoolService.attendanceInsert(aschaDclzVO);
+		
+		return result;
+	}
+
+	// 출결정보 수정
+	@ResponseBody
+	@PostMapping("/attendanceUpdate")
+	public int attendanceUpdate(@RequestBody AschaDclzVO aschaDclzVO) {
+		log.info("attendanceUpdate -> aschaDclzVO:"+aschaDclzVO);
+		int result = this.afterSchoolService.attendanceUpdate(aschaDclzVO);
+		
+		return result;
+	}
+	
+	// 출결정보 삭제
+	@ResponseBody
+	@PostMapping("/attendanceDelete")
+	public int attendanceDelete(@RequestBody AschaDclzVO aschaDclzVO) {
+		log.info("attendanceDelete -> aschaDclzVO :" +aschaDclzVO);
+		int result = this.afterSchoolService.attendanceDelete(aschaDclzVO);
+		
+		return result;
+	}
+
+}

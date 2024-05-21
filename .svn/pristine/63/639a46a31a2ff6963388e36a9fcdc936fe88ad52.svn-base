@@ -1,0 +1,27 @@
+package kr.or.ddit.vo;
+
+import lombok.Data;
+
+@Data
+public class SttemntSearchVO {
+	private String sttemntCode;    				// 신고 코드
+	private String schulCode;      				// 학교 코드
+	private String clasCode;					// 반 코드
+	private String nttCode;        				// 게시물 코드
+	private String cmmnSttemntCn;      			// 공통 신고 내용(A24)
+	private String cmmnSttemntCnNm;  			// 공통 신고 내용(A24) 이름
+	private String wrterId;						// 작성자 아이디
+	private String mberId;         				// 신고자 아이디
+
+	private String cmmnSttemntProcessttus; 		// 공통 신고 처리 상태(A21)
+	private String cmmnSttemntProcessttusNm; 	// 공통 신고 처리 상태(A21) 이름
+	private String mngrId;         				// 관리자 아이디
+	private int nttSttemntAccmlt;				// 게시물 신고누적
+	private String nttSe;						// 게시물 구분
+	
+	private String keyword;						// 검색어
+	private int currentPage;					// 현재 페이지
+	private int size;							// 한 화면에 보일 목록 수
+	
+	// JOIN
+}

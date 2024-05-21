@@ -1,0 +1,31 @@
+package kr.or.ddit.school.service;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.AschaVO;
+
+public interface AfterSchoolService {
+
+	// 방과후학교 리스트
+	public List<AschaVO> afterSchoolList(Map<String, Object> map);
+	
+	// 방과후학교 전체 수 
+	public int getTotalAfterSchool(Map<String, Object> map);
+
+	// 방과후학교 상세
+	public AschaVO afterSchoolDetail(AschaVO aschaVO);
+
+	// 방과후학교 생성
+	public int afterSchoolCreate(AschaVO aschaVO);
+
+	// 방과후학교 수정
+	public int afterSchoolUpdate(AschaVO aschaVO);
+
+	// 방과후학교 삭제
+	public int afterSchoolDelete(AschaVO aschaVO);
+
+	// 교사 방과후화면 개설 목록
+	public List<AschaVO> afterSchoolTeacherList(String mberId);
+
+}

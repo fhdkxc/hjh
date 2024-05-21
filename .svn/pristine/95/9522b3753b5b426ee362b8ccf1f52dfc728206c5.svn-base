@@ -1,0 +1,63 @@
+/* 카카오톡 친구리스트 화면(friend.html)의 특정적인 스타일만 작성 */
+/* 큰 레이아웃은 main-layout.css에 작성되어 있음 */
+
+
+/* 헤더 안의 컨텐츠 스타일 지정 = main-layout.css 참고 */
+
+/* 네비게이션 안의 컨텐츠 스타일 지정 = main-layout.css 참고 */
+
+/* 메인 안의 컨텐츠 스타일 지정 */
+main{
+    /* 친구 리스트는 flex box로 레이아웃으로 구성 */
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+ul{
+    list-style: none;
+    padding-left: 0;
+    /* unordered list 기본 스타일 제거(점, 들여쓰기) */
+}
+/* 제목(h2와 p) 사이즈 재정의 */
+.profile-title > *{
+    font-size: 0.75rem; /* 16px 브라우저 기준 12px 의미*/
+    color: gray;
+    display: inline-block;
+    margin: 0;
+}
+li{
+    /* 각각의 프로필을 flex box로 구성 */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    padding-bottom: 0.4375rem; /* 16 브라우저 기준 7px */
+    padding-top: 0.4375rem; /* 16 브라우저 기준 7px */
+}
+li > img{
+    /* 프로필사진 사이즈 조절 */
+    width: 3.125rem;
+    height: 3.125rem;
+}
+.profile > *{
+    /* 이름과 프로필 사진의 margin 조절 */
+    margin: 0.3125rem; /* 5px (16px 브라우저 기준) */
+    margin-left: 0.625rem;
+}
+.profile > *:first-of-type{
+    /* 이름 스타일 변경 : 굵게 처리 */
+    font-weight: bold;
+    font-size: 0.875rem; /* 16 브라우저 기준 14px */
+} 
+.profile > *:nth-of-type(2){
+    /* 상태메시지 스타일 변경*/
+    color: gray;
+    font-size: 0.75rem; /* 16 브라우저 기준 12px */
+}
+.profile-title{
+    border-top: 1px solid rgb(202, 200, 200);
+    padding-top: 0.625rem;
+}
+
+/* 광고 안의 컨텐츠 스타일 지정 = main-layout.css 참고 */

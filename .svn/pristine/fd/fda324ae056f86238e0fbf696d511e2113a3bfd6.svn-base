@@ -1,0 +1,20 @@
+package kr.or.ddit.dclz.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.DclzVO;
+
+public interface DclzMapper {
+
+	// 학생 등교 하교 기록
+	public void insertDclz(Map<String, Object> map);
+	
+	// sysdate get
+	public String getSysdate();
+
+	// 출결 정보 get
+	public List<DclzVO> getAllDclz(Map<String, Object> map);
+
+
+}

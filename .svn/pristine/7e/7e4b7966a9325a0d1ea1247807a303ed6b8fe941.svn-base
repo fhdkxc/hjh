@@ -1,0 +1,22 @@
+package kr.or.ddit.classroom.mapper;
+
+import java.util.List;
+
+import kr.or.ddit.vo.DiarySearchVO;
+import kr.or.ddit.vo.NttVO;
+
+public interface DiaryMapper {
+
+	// 일기장  쓰기에서 날씨를 불러오기위해 학교가 소속된 지역을 가져오는 메서드
+	public String getSchulArea(String schulCode);
+
+	// 일기장 등록
+	public int addDiaryAct(NttVO nttVO);
+
+	// 일기장 목록 불러오기
+	public List<NttVO> getDiaryList(DiarySearchVO diarySearchVO);
+
+	// 일기장 개수 불러오기
+	public int getDiaryTotal(DiarySearchVO diarySearchVO);
+
+}

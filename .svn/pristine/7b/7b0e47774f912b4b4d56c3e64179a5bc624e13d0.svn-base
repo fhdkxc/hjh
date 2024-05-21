@@ -1,0 +1,72 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript" src="/resources/js/commonFunction.js"></script>
+
+<h2>chooseStd</h2>
+
+<script>
+const goSchoolPage=function(clasCode){
+	document.querySelector("#schulCodeInput").value = clasCode;
+	let form = document.querySelector("#form");
+	form.action = "/school/mainParent";
+	form.submit();
+}
+
+const getSchoolAndChildren = function(){
+	// 자녀 리스트
+	$.ajax({
+		url:"/school/getSchoolAndChildren",
+		type:"post",
+		dataType: "json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success:function(res){
+			console.log("res:",res);
+			
+			if(res == null || res.length == 0){
+				return;
+			};
+
+			let str = "";
+			
+			res.forEach(function(sch){
+				str += `<table border = '1'>
+						<tr class = "d-tr" onclick = "goSchoolPage('\${sch.schulCode}')">
+						<th>\${sch.schulCode}</th>
+						<th>\${sch.schulNm}</th>
+						</tr>
+						<tr>
+						<td colspan = "100%">포함되어 있는 학생</td>
+						</tr>
+						`;
+				sch.stdList.forEach(function(std){
+					str += `<tr>
+							<td colspan = "100%">\${std.mberNm}</td>
+							</tr>`;
+				})
+				
+				str += `</table>`;
+			})
+			
+			document.querySelector("#resDiv").innerHTML = str;
+		},
+		error : function(request, status, error){
+			console.log("code: " + request.status + " message: " + request.responseText + " error: " + error)
+		}
+	});
+};
+
+
+window.onload = function(){
+	getSchoolAndChildren();
+}
+</script>
+
+<form id ="form" action = "">
+<input type="hidden" id = "schulCodeInput" name="schulCode" value="" />
+</form>
+
+<div id = "resDiv"><p>가입한 학교가 없습니다.. 마이페이지로 이동해 자녀를 등록하세요.</p></div>

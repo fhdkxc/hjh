@@ -1,0 +1,213 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.4.10/dist/sweetalert2.min.css">
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript">
+// beforeSend 전역변수 처리
+const header="${_csrf.headerName}";
+const token ="${_csrf.token}";
+const schulCode = "${param.schulCode}";
+
+window.onload = function(){
+	console.log("방과후학교 만들기 실행되었습니다~")
+	
+	
+	// 방과후학교 주간계획 추가
+	document.querySelector(".weekAdd").addEventListener("click", function(){
+		console.log("계획추가버튼 클릭함")
+		
+		let len = document.querySelectorAll(".aschaWeek").length;
+		console.log("len : "+len);
+		
+		let str = "";
+	    str += `
+		        <div>
+		            <div class="btn-group w-100 divWeekMinus" style="width:3%;float:left;">
+		                <span class="btn btn-success col fileinput-button dz-clickable">
+		                    <i class="fas fa-minus"></i>
+		                </span>
+		            </div>
+		            <div style="width:7%;float:left;">
+		                <input type="text" class="form-control aschaWeek"
+		                    name="aschaWeekPlanVOList[\${len}].aschaWeek" id="aschaWeek\${len+1}" value="\${len+1}주" />
+		            </div>
+		            <div style="width:90%;float:left;">
+		                <input type="text" class="form-control aschaWeekPlanCn"
+		                    name="aschaWeekPlanVOList[\${len}].aschaWeekPlanCn" id="aschaWeekPlanCn\${len+1}"
+		                    placeholder="주간계획 입력" />
+		            </div>						
+		        </div>`;
+				
+				console.log("str:",str);
+				
+				const temp = document.querySelector("#divWeekAdd").insertAdjacentHTML(
+					    "beforeend", // HTML 요소가 삽입되는 위치 선언
+					    str // 삽입할 문자열
+				);
+				
+// 				let divWeekAdd = document.getElementById("divWeekAdd");
+// 				divWeekAdd.append(str);
+				
+// 				document.querySelector("#divWeekAdd").append(str);
+// 				$("#divWeekAdd").append(str);
+		
+	});
+	
+
+	
+	
+	// 방과후학교 추가하기
+	// 등록 버튼 눌렀을 때 실행하기
+	document.querySelector("#btnCreate").addEventListener("click",function(){
+
+		const aschaNm = document.querySelector("#aschaNm").value;
+		const aschaDetailCn = document.querySelector("#aschaDetailCn").value;
+		const aschaAtnlcCt = document.querySelector("#aschaAtnlcCt").value;
+		const aschaAceptncPsncpa = document.querySelector("#aschaAceptncPsncpa").value;
+		const aschaAtnlcBgnde = document.querySelector("#aschaAtnlcBgnde").value;
+		const aschaAtnlcEndde = document.querySelector("#aschaAtnlcEndde").value;
+		
+		let data ={
+			"schulCode"			: schulCode,
+			"aschaNm"			: aschaNm,		
+			"aschaDetailCn"	    : aschaDetailCn,	    
+			"aschaAtnlcCt"	    : aschaAtnlcCt,    
+			"aschaAceptncPsncpa": aschaAceptncPsncpa,	
+			"aschaAtnlcBgnde"	: aschaAtnlcBgnde,
+			"aschaAtnlcEndde"	: aschaAtnlcEndde	
+		}
+		console.log('data : ',data)
+		
+		$.ajax({
+			url: "/afterSchool/afterSchoolCreateAjax",
+			contentType: "application/json; charset= utf-8",
+			data: JSON.stringify(data),
+			type: "post",
+			dataType: "json",
+			beforeSend: function(xhr){
+				xhr.setRequestHeader(header, token);
+			},
+			success: function(result){
+				Swal.fire({
+				      icon: 'success',
+				      title: '방과후학교가 등록되었습니다.',
+				      text: '목록으로 이동합니다.',
+					}).then(function(){
+						location.href = "/afterSchool?schulCode="+encodeURIComponent(schulCode);
+				});
+			}
+		});	
+	});
+}
+
+</script>
+<style>
+.btn-primary {
+    color: #fff;
+    background-color: #006DF0;
+    border-color: #005Dd0;
+}
+.btn-group, .btn-group-vertical {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-top: 4px;
+}
+.btn-success {
+    color: #fff;
+    background-color: #FCC25B;
+    border-color: #FCC25B;
+/*     border-color: #e1a130; */
+}
+.btn-success:hover {
+    color: #fff;
+    background-color: #e1a130;
+    border-color: #e1a130;
+    transition: 0.8s;
+}
+.btn-success:active {
+    color: #fff;
+    background-color: #e1a130;
+    border-color: #e1a130;
+}
+.button-group {
+    padding: 40px 0 10px 0;
+}
+</style>
+<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+	<div class="review-content-section">
+		<h4>방과후학교 만들기</h4>
+		<div class="row">
+			<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+				<form id="acount-infor" action="#" class="acount-infor"
+					novalidate="novalidate">
+					<div class="devit-card-custom">
+<!-- 						<div class="form-group"> -->
+<!-- 							<label>담당 선생님</label> -->
+<!-- 							<input type="text" class="form-control" id="mberNm" name="mberNm" placeholder="담당선생님"> -->
+<!-- 						</div> -->
+						<div class="form-group">
+							<label>방과후학교 명</label>
+							<input type="text" class="form-control" id="aschaNm" name="aschaNm">
+						</div>
+						<div class="form-group">
+							<label>강의 설명</label>
+							<textarea class="form-control" id="aschaDetailCn" name="aschaDetailCn"></textarea>
+						</div>
+						<div class="form-group">
+							<label>수강 비용</label>
+							<input type="number" class="form-control" id="aschaAtnlcCt" name="aschaAtnlcCt" value="0" placeholder="원 단위로 입력하세요">
+						</div>
+						<div class="form-group">
+							<label>수강 정원</label>
+							<input type="number" class="form-control" id="aschaAceptncPsncpa" name="aschaAceptncPsncpa" value="0" placeholder="명 단위로 입력하세요">
+						</div>
+						<div class="form-group">
+							<label>수강 시작 일자</label>
+							<input type="date" class="form-control" id="aschaAtnlcBgnde" name="aschaAtnlcBgnde" value="0">
+						</div>
+						<div class="form-group">
+							<label>수강 종료 일자</label>
+							<input type="date" class="form-control" id="aschaAtnlcEndde" name="aschaAtnlcEndde" value="0">
+						</div>
+
+						<!-- 주간계획 -->
+						<div class="form-group">
+							<label for="">주간계획 등록</label>
+							<div>
+								<button type="button" class="btn btn-custon-rounded-two btn-primary weekAdd">추가하기</button>						
+							</div>
+							<div class="form-group" id="divWeekAdd">
+								<div>
+									<!-- 마이너스 버튼 -->
+									<div class="btn-group w-100 divWeekMinus" style="width:3%;float:left;">
+										<span
+											class="btn btn-success col fileinput-button dz-clickable">
+											<i class="fas fa-minus"></i>
+										</span>
+									</div>
+									<!-- 주간계획 입력하기 -->
+									<div style="width:7%;float:left;">
+										<input type="text" class="form-control aschaWeek"
+											name="aschaWeekPlanVOList[0].aschaWeek" id="aschaWeek1" value="1주" />
+									</div>
+									<div style="width:90%;float:left;">
+										<input type="text" class="form-control aschaWeekPlanCn"
+											name="aschaWeekPlanVOList[0].aschaWeekPlanCn" id="aschaWeekPlanCn1"
+											placeholder="주간계획 입력" />
+									</div>						
+								</div>
+							</div>	
+						</div>
+						
+						<div class="button-group">
+						<!-- 클릭시 alert창 띄우면서 목록으로 돌아가기 -->
+							<button type="button" id="btnCreate" class="btn btn-custon-rounded-two btn-primary">등록</button>
+							<button type="button" class="btn btn-custon-rounded-two btn-danger">취소</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>

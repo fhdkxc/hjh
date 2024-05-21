@@ -1,0 +1,422 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Doodle Chat</title>
+<script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script type="text/javascript" src="/resources/js/commonFunction.js"></script>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+<link rel="stylesheet" href="/resources/chat/CSS/chat-room.css">
+<link rel="stylesheet" href="/resources/chat/CSS/general.css">
+<link rel="stylesheet" href="/resources/css/mainPage.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap">
+<style type="text/css">
+
+</style>
+</head>
+<body>
+<%-- <p>${USER_INFO}</p> --%>
+<%-- <p>${chttRoomVO}</p> --%>
+
+<div id="chat-body" style="position: relative;">
+    <!-- 설정바(최소화, 닫기 버튼 등) -->
+    <div class="setting_bar">
+<!--         <i class="fa-solid fa-window-minimize" alt="최소화버튼" title="최소화"></i> -->
+<!--         <i class="fa-regular fa-window-maximize" alt="최대화버튼" title="최대화"></i> -->
+<!--         <i class="fa-solid fa-xmark" alt="닫기버튼" title="닫기"></i> -->
+		<button class="btn btn-outline-secondary" type="button" id="button-out">뒤로가기</button>
+    </div>
+    <!-- 알림, 메뉴 기능 -->
+    <div class="main-menu">
+<!--         <i class="fa-solid fa-bell" title="알림"></i> -->
+<!--         <i class="fa-solid fa-ellipsis" title="메뉴"></i> -->
+    </div>
+    <!-- 프로필 사진, 프로필명 -->
+    <header style="justify-content: center;">
+<!--         <img class="profile-img" src="/resources/chat/pic/default.png" alt="쀼프로필사진"> -->
+        <div class="profile-col">
+		<c:choose>
+			<c:when test="${USER_INFO.mberId eq chttRoomVO.prtcpntId}">
+				<img class="profile-img" src="/upload/profile/${chttRoomVO.crtrVO.mberImage}" alt="">
+				<span class="profile-name">${chttRoomVO.crtrVO.mberNm}</span>
+			</c:when>
+			<c:when test="${USER_INFO.mberId eq chttRoomVO.crtrId}">
+				<img class="profile-img" src="/upload/profile/${chttRoomVO.prtcpntVO.mberImage}" alt="">
+				<span class="profile-name">${chttRoomVO.prtcpntVO.mberNm}</span>
+			</c:when>	
+		</c:choose>
+        </div>
+    </header>
+    <main>
+        <!-- 채팅 내용 시작 -->
+        <div id="chatBody">
+	        <div class="chat-content con" id="chatContent">
+	            <!-- 메시지 시작 날짜 -->
+<!-- 	            <div class="date-line"> -->
+<!-- 	                <time id="current_date" datetime="2021-03-29">2021년 3월 29일 월요일</time> -->
+<!-- 	            </div> -->
+	            <!-- 채팅 내용 -->
+	            <div id="msgArea" class="col"></div>
+	        </div>
+	        <!-- 채팅 입력창 -->
+	        <div class="insert-content">
+	            <form name="chatform" action="#" method="post">
+	                <input type="text" id="msg" class="form-control" name="msg" required style="border: 3px solid black;"/>
+	                <div class="input-group-append">
+			        	<button class="btn btn-outline-secondary" type="button" id="button-send">전송</button>
+			          </div>
+	            </form>
+	            <!-- 채팅 입력 관련 기능(파일 첨부, 캡쳐 등) -->
+<!-- 	            <div class="insert-menu"> -->
+<!-- 	                <i class="fa-solid fa-face-smile"></i> -->
+<!-- 	                <i class="fa-solid fa-paperclip"></i> -->
+<!-- 	                <i class="fa-solid fa-phone"></i> -->
+<!-- 	                <i class="fa-regular fa-calendar"></i> -->
+<!-- 	                <i class="fa-solid fa-camera"></i> -->
+<!-- 	            </div> -->
+	        </div>
+        </div>
+    </main>
+</div>
+</body>
+<script>
+// 전역변수 설정
+var socket  = null;
+var crtrId = '${chttRoomVO.crtrId}';
+var crtrNm = '${chttRoomVO.crtrVO.mberNm}';
+var crtrImage = '${chttRoomVO.crtrVO.mberImage}';
+var prtcpntId = '${chttRoomVO.prtcpntId}';
+var prtcpntNm = '${chttRoomVO.prtcpntVO.mberNm}';
+var prtcpntImage = '${chttRoomVO.prtcpntVO.mberImage}';
+console.log("crtrNm>>:",crtrNm);
+console.log("prtcpntImage>>:",prtcpntImage);
+
+$(document).ready(function(){
+    // 웹소켓 연결
+    sock = new SockJS("<c:url value="/echo"/>");
+    socket = sock;
+	
+    sock.onopen = function () {
+        console.log('Info: connection opened.');
+    };
+    
+ 	// 데이터를 전달 받았을때 
+//     sock.onmessage = onMessage; // toast 생성
+    
+});
+
+// // toast생성 및 추가
+// function onMessage(evt){
+//     var data = evt.data;
+    
+//     console.log("data:",data);
+
+//     var Toast = Swal.mixin({
+// 		toast: true,
+// 		position: 'top-end',
+// 		showConfirmButton: true,
+// 		timer: 5000
+// 	});
+// 	Toast.fire({
+// 		icon:'info',
+// 		title: data
+// 	});
+    
+// };	
+</script>
+<script>
+	var date = new Date();
+	console.log("date",date);
+	var year = date.getFullYear();	// 년	
+	var month = date.getMonth() + 1;	// 월
+	var day = date.getDate();			// 일
+	var dayLabel = date.getDay();		// 요일을 나타내는 숫자
+	var hours = getHours() 			// 시
+	var minutes = date.getMinutes(); 	// 분
+	var seconds = date.getSeconds();	// 초
+	
+	//요일을 나타내는 숫자를 요일로 바꾸기
+    function getTodayLabel() {        
+    	var week = new Array('일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일');        
+    	var today = date.getDay();    
+    	var todayLabel = week[today];        
+    	return todayLabel;
+    }
+	
+	//시간만들기
+	function getHours(){
+		let h = date.getHours()%12 == 0 ? 12 : date.getHours()%12;
+		if(h < 10) h = "0" + h;
+		
+		return h;
+	}
+	
+	//오전 오후 구하기
+	function getAmPm() {    
+		let h = date.getHours() < 12 ? "오전" : "오후";  
+		
+		return h;
+	}
+
+	function dateToAmPmFormat(date){
+		var selectDate = new Date(date);
+		var d = selectDate.getDate();
+		var m = selectDate.getMonth() + 1;
+		var y = selectDate.getFullYear();
+		var hour = selectDate.getHours()%12 == 0 ? 12 : selectDate.getHours()%12;
+		var min = selectDate.getMinutes();
+		var amPm = getAmPm();
+	   
+		if(m < 10)    m    = "0" + m;
+		if(d < 10)    d    = "0" + d;
+		if(hour < 10) hour = "0" + hour;
+		if(min < 10)  min  = "0" + min;
+	   
+		return y + "-" + m + "-" + d + " " + amPm + " " + hour + ":" + min; 
+	}
+	
+	function dateFormat(date){
+		// 숫자가 아니면 숫자로 변환
+		if (!isNaN(date)) { time = Number(date); }
+		
+		var selectDate = new Date(date);
+		var d = selectDate.getDate();
+		var m = selectDate.getMonth() + 1;
+		var y = selectDate.getFullYear();
+	   
+		if(m < 10) m = "0" + m;
+		if(d < 10) d = "0" + d;
+	   
+		return y + "년 " + m + "월" + d + "일"; 
+	}
+	
+	function dateToMinFormat(date){
+	   var selectDate = new Date(date);
+	   var d = selectDate.getDate();
+	   var m = selectDate.getMonth() + 1;
+	   var y = selectDate.getFullYear();
+	   var hour = selectDate.getHours();
+	   var min = selectDate.getMinutes();
+	   var sec = selectDate.getSeconds();
+	   
+	   if(m < 10)    m    = "0" + m;
+	   if(d < 10)    d    = "0" + d;
+	   if(hour < 10) hour = "0" + hour;
+	   if(min < 10)  min  = "0" + min;
+	   if(sec < 10)  sec  = "0" + sec;
+	   
+	   return y + "-" + m + "-" + d + " " + hour + ":" + min + ":" + sec; 
+	}
+	
+	var bottom =  function () {
+	  var chatContent = document.querySelector('#chatContent');
+	  chatContent.scrollTop = chatContent.scrollHeight;
+	}
+
+  $(document).ready(function(){
+	  
+	// 페이지가 시작할 때 chatContent의 끝으로 스크롤 이동
+	setTimeout(bottom, 800); 
+	  
+// 	const amPm = getAmPm();	//오전/오후
+
+// 	// 현재 시간을 업데이트하는 함수
+//  function updateCurrentTime() {
+//      const currentTime = new Date();
+//      const currentHour = currentTime.getHours() < 10 ? '0' + currentTime.getHours() : currentTime.getHours();
+//      const currentMinute = currentTime.getMinutes() < 10 ? '0' + currentTime.getMinutes() : currentTime.getMinutes();
+//      const currentSecond = currentTime.getSeconds() < 10 ? '0' + currentTime.getSeconds() : currentTime.getSeconds();
+//      const amPm = currentHour < 12 ? '오전' : '오후';
+
+//      // 'sendTime' 요소 업데이트
+//      const sendTimeElement = document.getElementById('sendTime');
+//      if (sendTimeElement) {
+//          sendTimeElement.innerText = amPm + ' ' + currentHour + ':' + currentMinute;
+//      }
+
+//      // 'receiveTime' 요소 업데이트
+//      const receiveTimeElement = document.getElementById('receiveTime');
+//      if (receiveTimeElement) {
+//          receiveTimeElement.innerText = amPm + ' ' + currentHour + ':' + currentMinute;
+//      }
+//  }
+	
+	
+	
+	
+	
+	//채팅 방 이름, 방 ID 및 사용자 이름을 입력 받습니다.
+//     var roomName = '${chttRoomVO}';
+    var chttRoomCode = '${chttRoomVO.chttRoomCode}';
+    var schulCode = '${chttRoomVO.schulCode}';
+    var dsptchNm = '${USER_INFO.mberNm}';
+    var dsptchId = '${USER_INFO.mberId}';
+    var chttDt = dateToAmPmFormat(date);	// 들어온 시간으로 고정된다
+    var chttSn = "";
+//     var currentPage = 0;
+//     var size = 20;
+    
+//     var chttDt = dateToMinFormat(new Date());	//실시간이지만 화면에 채팅이 안뜬다
+
+    console.log(schulCode + ", " + chttRoomCode + ", " + dsptchNm);
+
+    var sockJs = new SockJS("/stomp/chat");
+    //1. SockJS를 내부에 들고있는 stomp를 내어줌
+    var stomp = Stomp.over(sockJs);
+
+    //2. connection이 맺어지면 실행
+    stomp.connect({}, function (){
+      console.log("STOMP Connection")
+      
+//       var data ={
+//     	  "chttRoomCode" : chttRoomCode,
+//		  "currentPage" : currentPage,
+//		  "size" : size
+//       } 
+      console.log(chttRoomCode);
+      
+      //채팅내역 불러오기
+       $.ajax({
+    	url: "/chat/chtt",
+        type: "post",
+        data: chttRoomCode,
+        dataType: "json",
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("${_csrf.headerName}", "${_csrf.token}");
+        },
+        success: function(result) {
+//         	console.log("result@@@@@@@@@@@@@@@@"+JSON.stringify(result));
+        	var res = JSON.stringify(result);
+        	var chtt = JSON.parse(res);
+//         	console.log("resParse", JSON.parse(res));
+        	
+        	$.each(chtt,function(idx,chttVO){
+//         		console.log("chttVO.chttCode",chttVO.chttCode);
+        		console.log("dsptchNm", dsptchNm);
+        		if(chttVO.dsptchNm === dsptchNm){
+       	       	  str = "<div class='me-chat'>";
+       	          if(dsptchId == crtrId){
+     	          	str += "<img class='profile-img' src='/upload/profile/" + crtrImage + "' alt=''>";
+      	          }else{
+      	        	str += "<img class='profile-img' src='/upload/profile/" + prtcpntImage + "' alt=''>";
+      	          }
+       	          str += "<div class='me-chat-col'>";
+       	          str += "<span class='my-profile-name'>"+chttVO.dsptchNm+"</span>";
+       	          str += "<span class='balloon'>" + chttVO.chttCn + "<br><br><time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttVO.chttDt)+"</time></span></div></div>";
+//       	          str += "<time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttVO.chttDt)+"</time></div>";
+//       	          document.getElementById("sendTime").innerHTML = hours + "시 " + minutes + "분";
+       	        }
+       	        else{
+       	          str = "<div class='friend-chat'>";
+       	          if(dsptchId == crtrId){
+      	          	str += "<img class='profile-img' src='/upload/profile/" + prtcpntImage + "' alt=''>";
+       	          }else{
+       	        	str += "<img class='profile-img' src='/upload/profile/" + crtrImage + "' alt=''>";
+       	          }
+       	          str += "<div class='friend-chat-col'>";
+       	          str += "<span class='profile-name'>"+chttVO.dsptchNm+"</span>";
+       	       	  str += "<span class='balloon'>" + chttVO.chttCn + "<br><br><time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttVO.chttDt)+"</time></span></div></div>";
+//        	          str += "<span class='balloon'>" + chttVO.chttCn + "</span>";
+//       	          str += "</div><time id='receiveTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttVO.chttDt)+"</time></div>";
+//       	          document.getElementById("receiveTime").innerHTML = hours + "시 " + minutes + "분";
+       	        }
+       	        $("#msgArea").append(str);
+        	});
+        }
+	});
+	
+      //4. subscribe(path, callback)으로 메세지를 받을 수 있음
+      stomp.subscribe("/sub/chat/room/" + chttRoomCode, function (chat) {
+        var content = JSON.parse(chat.body);
+
+        var writer = content.writer;
+        var chttCn = content.chttCn;
+       	chttDt = new Date();
+        var str = '';
+        
+//         document.getElementById("current_date").innerHTML = dateFormat(chttDt) + " " + getTodayLabel();
+        
+        if(writer === dsptchNm){
+          str = "<div class='me-chat'>";
+          if(dsptchId == crtrId){
+            	str += "<img class='profile-img' src='/upload/profile/" + crtrImage + "' alt='쀼프로필사진'>";
+  		  }else{
+         		str += "<img class='profile-img' src='/upload/profile/" + prtcpntImage + "' alt='쀼프로필사진'>";
+  	      }
+          str += "<div class='me-chat-col'>";
+          str += "<span class='my-profile-name'>"+writer+"</span>";
+          str += "<span class='balloon'>" + chttCn + "<br><br><time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttDt)+"</time></span></div></div>";
+//           str += "<span class='balloon'>" + chttCn + "</span>";
+//           str += "</div><time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttDt)+"</time></div>";
+//           document.getElementById("sendTime").innerHTML = hours + "시 " + minutes + "분";
+          setTimeout(bottom, 80); 
+        }
+        else{
+          str = "<div class='friend-chat'>";
+          if(dsptchId == crtrId){
+          	str += "<img class='profile-img' src='/upload/profile/" + prtcpntImage + "' alt='쀼프로필사진'>";
+		  }else{
+       		str += "<img class='profile-img' src='/upload/profile/" + crtrImage + "' alt='쀼프로필사진'>";
+	      }
+          str += "<div class='friend-chat-col'>";
+          str += "<span class='profile-name'>"+writer+"</span>";
+          str += "<span class='balloon'>" + chttCn + "<br><br><time id='sendTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttDt)+"</time></span></div></div>";
+//           str += "<span class='balloon'>" + chttCn + "</span>";
+//           str += "</div><time id='receiveTime' datetime='"+hours+":"+minutes+":"+seconds+"+09:00'>"+dateToAmPmFormat(chttDt)+"</time></div>";
+//           document.getElementById("receiveTime").innerHTML = hours + "시 " + minutes + "분";
+          setTimeout(bottom, 80); 
+        }
+        $("#msgArea").append(str);
+      });
+
+      //3. send(path, header, message)로 메세지를 보낼 수 있음
+      stomp.send('/pub/chat/enter', {}, JSON.stringify({chttRoomCode: chttRoomCode, writer: dsptchNm}))
+    });
+
+    $("#button-send").on("click", function(e){
+      var msg = document.getElementById("msg");
+      var chttCn = msg.value;
+      var type = "chtt";
+
+      console.log(dsptchNm + ":!!!!!!!!!!" + msg.value + " chttDt : " + chttDt);
+      
+      socket.send(type+","+chttRoomCode+","+dsptchId+","+dsptchNm+","+chttCn+","+crtrId+","+prtcpntId);
+      stomp.send('/pub/chat/message', {}, JSON.stringify({chttRoomCode: chttRoomCode, chttDt: chttDt, chttCn: chttCn, writer: dsptchNm, dsptchId: dsptchId, chttSn: chttSn, dsptchNm: dsptchNm}));
+      msg.value = '';
+      
+//       setTimeout(bottom, 30); 
+    });
+    
+    //나가기 버튼 클릭 이벤트를 처리하는 함수를 정의
+    $("#button-out").on("click",function(){
+  		//Stomp 연결을 종료하고, 다른 페이지로 이동
+    	stomp.disconnect();
+  		
+//   		location.href="/chat/rooms?schulCode="+schulCode+"&mberId="+dsptchId;
+    	window.history.back();
+    })
+    
+    var msg = document.getElementById("msg");
+    
+    //메시지 입력 창에서 키보드 입력 이벤트를 처리하는 함수를 정의
+    msg.addEventListener("keypress", function (event) {
+    	//입력된 키가 Enter 키인 경우
+	    if (event.key === "Enter") {
+	    	//폼의 디폴트 동작을 중지하고, 전송 버튼을 클릭
+	        event.preventDefault();
+	        document.getElementById("button-send").click();
+	    }
+	});
+  
+  });
+  
+</script>
+</html>

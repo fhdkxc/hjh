@@ -1,0 +1,11 @@
+package kr.or.ddit.school.mapper;
+
+import java.util.List;
+
+import kr.or.ddit.vo.SchafsSchdulVO;
+
+public interface SchafsSchedulMapper {
+	
+	// 학사 일정 리스트
+	List<SchafsSchdulVO> scheduleSelect();
+}

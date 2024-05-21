@@ -1,0 +1,10 @@
+package kr.or.ddit.classroom.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.classroom.service.DiaryService;
+
+@Service
+public class DiaryServiceImpl implements DiaryService {
+
+}

@@ -1,0 +1,295 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- 4.4.2 -->
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script> 
+
+<script>
+// URL 접근 보호 테스트
+checkCl("${param.clasCode}");
+// 한명의 학생의 모든 단원평가 결과(학생 전용)
+var stdGcList = null;
+// 모든 단원평가 정보
+var unitEvlList = null;
+// table 가로 개수
+var rowsCount = 0;
+<sec:authorize access ="hasRole('A01002')">
+rowsCount =9;
+</sec:authorize>
+<sec:authorize access ="hasAnyRole('A01001', 'A01003')">
+rowsCount =6;
+</sec:authorize>
+
+window.onload = function(){
+	// 단원평가 정보 get
+	getUnitTestList();
+	// chartjs
+	drawChart(unitEvlList);
+}
+
+// 단원평가 리스트 읽어와 출력
+const getUnitTestList = function(){
+	let urlStr = "";
+	
+	<sec:authorize access ="hasRole('A01002')">
+	urlStr ="/unitTest/getUnitTestList";
+	</sec:authorize>
+	<sec:authorize access ="hasAnyRole('A01001', 'A01003')">
+	urlStr ="/unitTest/getStdGcList";
+	</sec:authorize>
+	
+	$.ajax({
+			url : urlStr,
+	        type:"post",
+	        dataType:"json",
+	        async : false,
+	        beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+	        success:function(res){
+	        	unitEvlList = res;
+	        	console.log("unitEvlData",res);
+				let str ="";
+				
+	        	$.each(res,function(index,item){
+	        		let beginDt = dateToMinFormat(item.unitEvlBeginDt);
+	        		let endDt   = dateToMinFormat(item.unitEvlEndDt);
+	        		
+					str +=`<tr onclick ="goDetail('\${item.unitEvlCode}')" class ="d-tr">
+						   <td>\${index+1}</td>
+						   <td>\${item.unitEvlNm}</td>
+						   <td>\${beginDt}</td>
+						   <td>\${endDt}</td>`
+					
+					let scoreStr = "";	// 학생 : 내 점수. 교사 : 평균 점수.		    
+					let statusStr = ""; // 단원평가 상태	
+					let cntStr = "";    // 응시, 미응시 인원
+						   
+					if(cjh.isPastDate(endDt)){
+						statusStr = `<td style="text-align:center;"><div class ="d-div-gray">종료</div></td></tr>`;
+					}else{
+						statusStr = `<td style="text-align:center;"><div class ="d-div-yellow">진행중</div></td></tr>`;
+					}
+
+					// 학생
+					<sec:authorize access="hasRole('A01001')"> 
+					scoreStr = "<td>미응시</td>"; // 학생 : 내 점수
+					// 응시 완료한 단원평가는 완료 상태로 변경.
+					if(item.unitEvlScoreVOList[0].gcCode != null){
+						scoreStr = `<td>\${item.unitEvlScoreVOList[0].scre}</td>`;
+						statusStr = `<td style="text-align:center;"><div class ="d-div-green">완료</div></td></tr>`;
+					}
+					</sec:authorize>
+					
+					// 교사
+					<sec:authorize access="hasRole('A01002')"> 
+					cntStr += `<td>\${item.allCnt-item.doneCnt}</td>`;
+					cntStr += `<td>\${item.doneCnt}</td>`;
+					cntStr += `<td>\${item.allCnt}</td>`;
+					scoreStr += `<td>\${item.avgClasScore}</td>`;
+					str += cntStr;
+					</sec:authorize>
+
+					
+					str += scoreStr;
+					str += statusStr;
+				}); // res.forEach end...
+				
+				document.querySelector("#listTbody").innerHTML = str;
+				
+				
+	        },
+	        error:function(xhr){
+	            console.log(xhr.status);
+	        }
+		})
+}
+
+// 상세보기
+const goDetail = function(unitEvlCode){
+	document.querySelector("#formDataUnitEvlCode").value = unitEvlCode;
+	let form = document.querySelector("#tempForm");
+	form.action = "/unitTest/detail";
+	console.log("form action : ",form.action);
+	form.submit();
+}
+
+//chartjs
+// 4.4.2
+const drawChart = function(scoreData){
+	const ctx = document.querySelector('#myChart');
+	ctx.style.display ="block";
+	let chartType     = "bar";
+	let chartLabel    = [];
+	let chartData	  = [{
+						data:[],
+					    borderWidth:1,
+					    backgroundColor:[],
+						maxBarThickness:[]
+					    }];
+	let chartOptions  = {
+					    	responsive: false,
+				
+					        scales: {
+					            y: {
+					                beginAtZero: true,
+					            	max :100,
+						        	ticks:{
+						        		stepSize:5
+						        	},
+					            },
+					        },
+					        plugins: {
+					            legend: {
+					              display: false
+					            },
+					        },
+						};
+	console.log("chartOptions:",chartOptions);
+	// 학생, 학부모
+	<sec:authorize access="hasRole('A01001')">
+	let clone = JSON.parse(JSON.stringify(chartData[0]));
+	// 내 점수 추가
+	for(let i = scoreData.length-1; i >= 0; --i){
+		chartLabel.push(i+1+" "+scoreData[i].unitEvlNm);
+		chartData[0].data.push(scoreData[i].unitEvlScoreVOList[0].scre);
+		chartData[0].backgroundColor.push('#FCC25Bb0');
+		chartData[0].maxBarThickness.push("200");
+	}
+	// 반 평균 점수 추가
+	for(let i = scoreData.length-1; i >= 0; --i){
+		clone.data.push(scoreData[i].avgClasScore);
+		clone.backgroundColor.push('#ccccccb0');
+		clone.maxBarThickness.push("200");
+		chartData.push(clone);
+	}
+	chartOptions.plugins.legend.display = "true";
+	chartData[0].label = "내 점수"
+	chartData[1].label = "반 평균 점수"
+	</sec:authorize> // 학생 끝 .. 
+	
+	// 교사
+	<sec:authorize access="hasRole('A01002')">
+
+	// 학생 정보 put
+	for(let i = scoreData.length-1; i >= 0; --i){
+		chartLabel.push(i+1+" "+scoreData[i].unitEvlNm);
+		chartData[0].data.push(scoreData[i].avgClasScore);
+		if(cjh.isPastDate(dateToMinFormat(scoreData[i].unitEvlEndDt))){
+			chartData[0].backgroundColor.push('#ccccccb0');
+		}else{
+			chartData[0].backgroundColor.push('#FCC25Bb0');
+		}
+		chartData[0].maxBarThickness.push("200");
+		chartData[0].label = "반 평균 점수"
+	}
+	</sec:authorize> // 교사 끝 ..
+	
+	// 꺾은선 그래프 추가
+	let line = JSON.parse(JSON.stringify(chartData[0]));
+	line.type = "line";
+	line.borderColor = "#006DF0";
+	line.backgroundColor = "#006DF0b0";
+	line.borderWidth = "1";
+	line.tension = "0.1";
+	line.order = "-1";
+	line.pointBackgroundColor = '#006DF0b0';
+	chartData.push(line);
+	<sec:authorize access="hasRole('A01001')">
+	line.label = "내 점수 변화";
+	</sec:authorize>
+	
+	let myChart = new Chart(ctx, {
+	    type: chartType, 
+	    data: {
+	        labels: chartLabel,
+	        datasets: chartData,
+	    },
+	    options: chartOptions
+	});
+	
+	myChart.update();
+	
+	console.log("myChart",myChart.data);
+}
+</script>
+
+<div id = "unitTestList">
+
+	<form id = "tempForm" action ="" method ="post">
+		<input type = "text" id = "formDataUnitEvlCode" name = "unitEvlCode" value = "" style="display:none;">
+		<sec:csrfInput />
+	</form>
+	
+	<!-- 헤더 -->
+	<jsp:include page="unitTestHeader.jsp" flush="true"/>
+	<script>document.querySelector("#bread-blod").value = "목록";</script>
+	
+
+	
+	<div class="product-status mg-b-15">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+					<div class="product-status-wrap" style="position: relative;">
+						<h1>단원평가</h1>
+						<div class="add-product">
+							
+							<!-- 차트 -->
+							<div style="width:100%; ">
+								<canvas id="myChart" style="height:300px; width:100%; display :none;"></canvas>
+							</div>
+							
+							
+							<sec:authorize access ="hasRole('A01002')">
+							<button class ="d-btn-blue pull-right" style ="margin:10px 0px; padding : 10px 20px; min-width: 100px" onclick="location.href='/unitTest/create'">단원평가 생성</button>
+							</sec:authorize>
+						</div>
+						<div class="asset-inner">
+							<table>
+								<thead>
+									<tr>
+										<th>번호</th>
+										<th>단원평가 명</th>
+										<th>시작 일시</th>
+										<th>종료 일시</th>
+										<sec:authorize access ="hasAnyRole('A01001', 'A01003')">
+										<th>내 점수</th>
+										</sec:authorize>
+										<sec:authorize access ="hasRole('A01002')">
+										<th>미응시 인원</th>
+										<th>응시 완료 인원</th>
+										<th>총 인원</th>
+										<th>평균 점수</th>
+										</sec:authorize>
+										<th style="text-align: center;">상태</th>
+									</tr>
+								</thead>
+								<tbody id="listTbody">
+									<tr>
+										<td colspan="${rowsCount}" style="text-align: center;">등록된 단원평가가
+											없습니다..</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+	
+					<div class="custom-pagination">
+						<ul class="pagination">
+							<li class="page-item"><a class="page-link" href="#">Previous</a></li>
+							<li class="page-item"><a class="page-link" href="#">1</a></li>
+							<li class="page-item"><a class="page-link" href="#">2</a></li>
+							<li class="page-item"><a class="page-link" href="#">3</a></li>
+							<li class="page-item"><a class="page-link" href="#">Next</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+

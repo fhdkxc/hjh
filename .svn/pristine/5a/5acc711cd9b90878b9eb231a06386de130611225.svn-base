@@ -1,0 +1,37 @@
+package kr.or.ddit.classroom.controller;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import kr.or.ddit.classroom.service.DiaryService;
+import kr.or.ddit.vo.MemberVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/diary")
+@Controller
+public class DiaryController {
+	
+	@Autowired
+	DiaryService diaryService;
+	
+	@GetMapping("/goToDiaryList")
+	public String goToDiaryList() {
+		return "class/getDiaryList";
+	}
+	
+	@GetMapping("/addDiary")
+	public String addDiary(HttpServletRequest request, Model model) {
+		MemberVO mberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.debug("addDiary mberVO => " + mberVO);
+		
+		model.addAttribute("mberVO", mberVO);
+		
+		return "class/addDiary";
+	}
+}

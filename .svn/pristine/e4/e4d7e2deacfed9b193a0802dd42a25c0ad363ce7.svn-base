@@ -1,0 +1,171 @@
+package kr.or.ddit.classroom.controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.classroom.service.NtcnService;
+import kr.or.ddit.vo.AtchFileVO;
+import kr.or.ddit.vo.ClasVO;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.NtcnVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/ntcn")
+@Controller
+public class NtcnController {
+
+	@Autowired
+	NtcnService ntcnService;
+	
+	@Autowired
+	String uploadFolder;
+	
+	// 알림장 메인 출력
+	@GetMapping("/ntcnList")
+	public String ntcnList(HttpServletRequest request, Model model
+			,@RequestParam(value="clasCode", required=false) String clasCode
+			,@RequestParam(value="currentPage", required=false, defaultValue="1") String currentPage
+			,@RequestParam(value="keyword", required=false, defaultValue="") String keyword) {
+		log.info("ntcnList -> keyword: " + keyword);
+		
+		// 세션에 저장된 클래스 정보 가져오기
+		ClasVO clasVO = (ClasVO) request.getSession().getAttribute("CLASS_INFO");
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("clasCode", clasVO.getClasCode());
+		map.put("currentPage", currentPage);
+		map.put("keyword", keyword);
+		log.info("ntcnList -> map: " + map);
+		
+		List<NtcnVO> ntcnVOList = ntcnService.getNoticeList(map);
+		log.info("ntcnList -> ntcnVOList: " + ntcnVOList);
+		
+		List<AtchFileVO> atchFileList = ntcnService.atchFileList(clasVO.getClasCode());
+		log.info("ntcnList -> atchFileList: " + atchFileList);
+		
+		int total = ntcnService.getTotalNtcn(clasVO.getClasCode());
+		
+		model.addAttribute("keyword", keyword);
+		model.addAttribute("total", total);
+		model.addAttribute("ntcnVOList", ntcnVOList);
+		model.addAttribute("atchFileVOList", atchFileList);
+		
+		return "class/ntcn";
+	}
+	
+	// 알림 등록 폼 출력
+	@GetMapping("/ntcnInsertForm")
+	public String ntcnInsertForm(@RequestParam("clasCode") String clasCode, Model model) {
+		log.info("ntcnInsertForm -> clasCode: " + clasCode);
+		
+		return "class/ntcnInsertForm";
+	}
+	
+	// 알림장 게시판 등록
+	@ResponseBody
+	@PostMapping("/ntcnInsert")
+	public String ntcnInsert(HttpServletRequest request, NtcnVO ntcnVO) {
+		log.info("ntcnInsert -> ntcnVO: " + ntcnVO);
+		
+		// insert 결과 담을 변수 선언
+		int result1 = 0;
+		int result2 = 0; 
+		
+		// 교사 세션 가져오기
+		MemberVO loginAccount =  (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String mberId = loginAccount.getMberId();
+		
+		// 업로드한 파일 가져오기
+		MultipartFile[] multiPartFile = ntcnVO.getUploadFiles();
+		log.info("ntcnInsert -> multiPartFile: " + multiPartFile);
+		
+		// 업로드한 파일이 있는 경우에만 업로드 진행
+		if(multiPartFile != null && multiPartFile.length > 0) {
+			File uploadPath = new File(uploadFolder + "\\ntcn\\");
+			
+			if(!uploadPath.exists()) {
+				uploadPath.mkdirs();
+			}
+			
+			// 첨부 파일 코드 구해서 VO에 추가
+			String atchFileCode = ntcnService.getAtchFileCode(ntcnVO.getClasCode());
+			log.info("ntcnInsert -> atchFileCode: " + atchFileCode);
+			
+			List<AtchFileVO> atchFileVOList = new ArrayList<AtchFileVO>();
+			int sn = 1; // 순번
+			
+			for (MultipartFile mf : multiPartFile) {
+				
+				// 파일 복사
+				try {
+					UUID uuid = UUID.randomUUID();
+					File fileName = new File(uploadPath, uuid.toString() + "_" + mf.getOriginalFilename());
+					
+					AtchFileVO atchFileVO = new AtchFileVO();
+
+					mf.transferTo(fileName);
+					atchFileVO.setAtchFileCode(atchFileCode);
+					atchFileVO.setAtchFileSn(sn++);
+					atchFileVO.setAtchFileCours(uuid.toString() + "_" + mf.getOriginalFilename());
+					atchFileVO.setAtchFileNm(mf.getOriginalFilename());
+					atchFileVO.setAtchFileTy(mf.getContentType());
+					atchFileVO.setRegistId(mberId);
+					log.info("ntcnInsert -> atchFileVO: " + atchFileVO);
+					
+					atchFileVOList.add(atchFileVO);
+					log.info("ntcnInsert -> atchFileVOList: " + atchFileVOList);
+					
+				} catch (IllegalStateException | IOException e) {
+					e.printStackTrace();
+				}
+				
+			}
+			
+			log.info("ntcnInsert -> 최종 atchFileVOList: " + atchFileVOList);
+			
+			// 1. 첨부파일 테이블 insert
+			result1 = ntcnService.atchFileInsert(atchFileVOList);
+			log.info("파일 있 ntcnInsert -> result1: " + result1);
+			
+			// 2. 알림장 테이블 insert
+			ntcnVO.setAtchFileCode(atchFileCode);
+			result2 = ntcnService.ntcnInsert(ntcnVO);
+			log.info("ntcnInsert -> result2: " + result2);
+			log.info("ntcnInsert 후 -> ntcnVO: " + ntcnVO);
+			
+		}else { // 첨부파일 없는 경우, 알림장 테이블 insert만 진행
+			result1 = ntcnService.ntcnInsert(ntcnVO);
+			log.info("파일 없 ntcnInsert -> result1: " + result1);
+		}
+		
+		return ntcnVO.getClasCode();
+	}
+	
+	// 알림장 수정 폼 출력
+	@PostMapping("/ntcnUpdateForm")
+	public String ntcnUpdateForm(NtcnVO ntcnVO) {
+		log.info("ntcnUpdateForm -> ntcnVO: " + ntcnVO);
+		
+		return "class/ntcnUpdateForm";
+	}
+}

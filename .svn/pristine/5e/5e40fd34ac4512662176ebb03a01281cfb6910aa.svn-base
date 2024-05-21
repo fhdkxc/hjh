@@ -1,0 +1,252 @@
+package kr.or.ddit.school.service.impl;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.school.mapper.SchoolMapper;
+import kr.or.ddit.school.service.SchoolService;
+import kr.or.ddit.vo.AtchFileVO;
+import kr.or.ddit.vo.NttVO;
+import kr.or.ddit.vo.SchafsSchdulVO;
+import kr.or.ddit.vo.SchulVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class SchoolServiceImpl implements SchoolService {
+	@Autowired
+	SchoolMapper schoolMapper;
+	
+	@Autowired
+	String uploadFolder;
+
+	// 학교 공지사항 게시판 목록
+	@Override
+	public String notice() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 학교 교육정보 게시판
+	@Override
+	public String eduInfo() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//자료실 게시판 조회 
+   @Override
+   public List<NttVO> dataRoom(Map<String, Object> map) {
+      return this.schoolMapper.dataRoom(map);
+   }
+		
+	//자료실 게시판 상세조회
+	@Override
+	public NttVO dataRoomDetail(String nttCode) {
+		return this.schoolMapper.dataRoomDetail(nttCode);
+	}
+	
+	//자료실 게시판 생성
+	@Override
+	public int dataRoomCreate(NttVO nttVO) {
+		/*
+		 NttVO(nttCode=null, nttNm=테스트12, nttCn=내용12, nttWritngDt=null
+		, nttSttemntAccmlt=0, nttAtchFileCode=null, cmmnNttSe=null, cmmnNttSttemnt=null
+		, clasCode=null, schulCode=null, mberId=null, rnum=0, nttRdcnt=0, uploadFile=null
+		, atchFileVOList=null, memberVO=null, mberName=null)
+		 */
+		int result = this.schoolMapper.dataRoomCreate(nttVO);
+		log.info("dataRoomCreate->result : " + result);
+		
+		File uploadPath = new File(uploadFolder,getFolder());
+		
+		//폴더만들기 실행
+		if(uploadPath.exists()==false) {
+			uploadPath.mkdirs();
+		}
+		
+		//원본 파일 명
+		String uploadFileName = "";
+		
+		//MIME타입
+		String mime = "";
+		
+		//atchFileSn카운터변수
+		int atchFileSn = 1;
+		
+		MultipartFile[] uploadFile = nttVO.getUploadFile();
+		if (uploadFile != null) {
+		    for (MultipartFile multipartFile : uploadFile) {
+		        // 나머지 코드
+		    	log.info("--------------");
+				log.info("원본 파일명 : " + multipartFile.getOriginalFilename());
+				log.info("MIME타입  : " + multipartFile.getContentType());
+			
+				uploadFileName = multipartFile.getOriginalFilename();
+//					size = multipartFile.getSize();
+				mime = multipartFile.getContentType();
+				
+				UUID uuid = UUID.randomUUID();
+				uploadFileName = uuid.toString() + "_" + uploadFileName;
+			
+				//File객체 설계(어디로 복사할것인지? 경로)
+				File saveFile = new File(uploadFolder+"\\"+getFolder(),uploadFileName);
+				
+				try {
+					//파일 복사 실행
+					//파일객체.복사하겠다To(saveFile)
+					multipartFile.transferTo(saveFile);
+					
+					//첨부파일테이블 insert
+					AtchFileVO atchFileVO = new AtchFileVO();
+					atchFileVO.setAtchFileCode(nttVO.getNttAtchFileCode());
+					atchFileVO.setAtchFileSn(atchFileSn++); //순번
+					
+					//웹경로 : / + 연/월/일 + / + uuid_원본파일명
+					/*
+					 .replace("대상문자열(정규식불가)","바꿀문자")
+					    replace("\\","/") : 역슬러시 두개를 슬러시로 바꿈
+					 .replaceAll("대상문자열(정규식반영)","바꿀문자")
+					 	replaceAll("\\","/") : 역슬러시 한개를 슬러시로 바꿈
+					 	            \\  : escape 정규식 \
+					 	            \" : "
+					 */
+					atchFileVO.setAtchFileCours("/" + getFolder().replace("\\", "/") + "/" 
+							+ uploadFileName);
+//						atchFileVO.setPictureSize(size);
+					atchFileVO.setAtchFileTy(mime); //파일유형
+					log.info("atchFileVO : " + atchFileVO);
+					
+					result += this.schoolMapper.insertNttAttach(atchFileVO);//자식테이블 N
+				} catch (IllegalStateException | IOException e) {
+					log.error(e.getMessage());
+				}
+				
+		    }
+		} else {
+		    log.error("업로드된 파일이 없습니다.");
+		}
+		
+		//스프링 파일 객체 배열로부터 스프링 파일 객체를 하나씩 가져와보자
+		//MultipartFile[] uploadFile
+		
+		
+//			return this.schoolMapper.dataRoomCreate(nttVO);
+		return result; 
+		}
+		
+	//자료실 게시판 삭제
+	@Override
+	public int dataRoomDeleteAjax(String nttCode) {
+		return this.schoolMapper.dataRoomDeleteAjax(nttCode);
+	}
+	
+	//자료실 게시판 수정
+	@Override
+	public int dataRoomUpdateAjax(NttVO nttVO) {
+		return this.schoolMapper.dataRoomUpdateAjax(nttVO);
+	}
+	// 게시판 조회수 증가
+	public int totalViews(NttVO nttVO) {
+		return this.schoolMapper.totalViews(nttVO);
+	}
+	//자료실 총 게시물 수
+	@Override
+	public int dataRoomGetTotal(Map<String, Object> map) {
+		return this.schoolMapper.dataRoomGetTotal(map);
+	}
+
+	// 급식
+	@Override
+	public String meal() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 학사 일정 등록
+	@Override
+	public int scheduleInsert(SchafsSchdulVO schedule) {
+		return 0;
+	}
+
+	// 학사 일정 조회
+	@Override
+	public List<SchafsSchdulVO> scheduleSelect() {
+		return this.schoolMapper.scheduleSelect();
+	}
+
+	// 학사 일정 삭제
+	@Override
+	public int scheduleDelete(String start) {
+		return 0;
+	}
+
+	// 학사 일정 수정
+	@Override
+	public int scheduleUpdate(SchafsSchdulVO schedule) {
+		return 0;
+	}
+
+	// 시간표
+	@Override
+	public String schedule() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 학생(전교생) 관리
+	@Override
+	public String studentsManage() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 방과후학교
+	@Override
+	public String afterSchool() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 학급 클래스 목록
+	@Override
+	public String classList() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	//연/월/일 폴더 생성
+	public String getFolder() {
+		//2024-01-30 형식(format) 지정
+		//간단한 날짜 형식
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		//날짜 객체 생성(java.util 패키지)
+		Date date = new Date();
+		//2024-01-30
+		String str = sdf.format(date);
+		//2024-01-30 -> 2024\\01\\30
+		return str.replace("-", File.separator);
+	}
+		
+
+	// 학교 목록 조회
+	@Override
+	public List<SchulVO> schoolList(Map<String, Object> map) {
+		return this.schoolMapper.schoolList(map);
+	}
+	
+	// 전체 글 수
+	@Override
+	public int schoolGetTotal(Map<String, Object> map) {
+		return this.schoolMapper.schoolGetTotal(map);
+	}
+}

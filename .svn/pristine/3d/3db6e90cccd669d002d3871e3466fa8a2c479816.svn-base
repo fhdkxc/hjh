@@ -1,0 +1,217 @@
+package kr.or.ddit.util.service;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import kr.or.ddit.util.etc.AuthManager;
+import kr.or.ddit.util.mapper.SessionMapper;
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.ClasVO;
+import kr.or.ddit.vo.HrtchrVO;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.SchulPsitnMberVO;
+import kr.or.ddit.vo.SchulVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class SessionServiceImpl implements SessionService {
+
+	/*
+	 * 세션명
+	 * USER_INFO        회원(로그인중인)
+	 * CLASS_STD_INFO   반학생(접속중인 반의)
+	 * CLASS_TCH_INFO   담임교사(접속중인 반의)
+	 * CLASS_INFO       반(접속중인)
+	 * SCHOOL_INFO      학교(접속중인)
+	 * SCHOOL_USER_INFO 학교소속회원(접속중인)
+	 */
+	
+	@Autowired
+	SessionMapper sessionMapper;
+	@Autowired
+	AuthManager authManager;
+	
+	// 반/담임교사or반학생or자녀 정보 session에 저장 
+	@Override
+	public int enterClassPageAjax(HttpServletRequest request, String clasCode) {
+		// 로그인한 회원 정보 get
+		MemberVO memberVO = (MemberVO)request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.get1Auth(memberVO);
+		
+		// 입장한 반 정보 session에 저장
+		ClasVO clasVO = sessionMapper.getEnterClasVO(clasCode);
+		request.getSession().setAttribute("CLASS_INFO", clasVO);    // ClasVO
+
+		// 입장한 반의 학교 정보 session에 저장
+		enterSchoolPageAjax(request, clasVO.getSchulCode());
+		
+		// 반학생or담임교사or자녀 정보 session 저장에 필요한 쿼리문에 필요한 값 세팅
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("mberId", memberVO.getMberId());
+		map.put("clasCode",clasVO.getClasCode());
+
+		// 반학생 정보 session에 저장
+		if(auth.equals("ROLE_A01001")) {
+			log.info("학생");
+			ClasStdntVO ClasStdntVO = sessionMapper.getEnterClasStdntVO(map);
+			log.info("찾은 반학생VO:"+ClasStdntVO);
+			if(ClasStdntVO!=null) {
+				log.info("찾은 반학생VO Session에 잘 저장");
+				request.getSession().setAttribute("CLASS_STD_INFO", ClasStdntVO); // ClasStdntVO
+			}
+		}
+		// 담임교사 정보 session에 저장
+		else if(auth.equals("ROLE_A01002")) {
+			log.info("교직원");
+			HrtchrVO hrtchrVO = sessionMapper.getEnterHrtchrVO(map);
+			if(hrtchrVO!=null) {
+				request.getSession().setAttribute("CLASS_TCH_INFO", hrtchrVO);    // HrtchrVO
+			}
+		}
+		// 학부모일 때는 자녀의 반학생 정보 session에 저장
+		else if(auth.equals("ROLE_A01003")) {
+			log.info("학부모");
+			// mberId에 로그인한 학부모의 아이디가 아닌, 학생의 아이디가 필요
+			ClasStdntVO ClasStdntVO = sessionMapper.getChildInfoAfterEnterClass(map);
+			if(ClasStdntVO!=null) {
+				request.getSession().setAttribute(" CLASS_STD_INFO", ClasStdntVO); // ClasStdntVO
+			}
+		}
+		
+		return 0;
+	}
+
+	// 반/담임교사or반학생or자녀 정보 세션 삭제
+	@Override
+	public int quitClassPageAjax(HttpServletRequest request) {
+		request.getSession().removeAttribute("CLASS_INFO");      // ClasVO
+		request.getSession().removeAttribute("CLASS_STD_INFO");  // ClasStdntVO
+		request.getSession().removeAttribute("CLASS_TCH_INFO");  // HrtchrVO
+
+		return 0;
+	}
+
+	// 학교/학교소속회원 정보 세션 저장
+	@Override
+	public int enterSchoolPageAjax(HttpServletRequest request, String schulCode) {
+		// 로그인한 회원 정보 get
+		MemberVO memberVO = (MemberVO)request.getSession().getAttribute("USER_INFO");
+				
+		// 학교 정보 session에 저장
+		SchulVO schulVO = sessionMapper.getEnterSchoolVO(schulCode);
+		request.getSession().setAttribute("SCHOOL_INFO", schulVO);
+		
+		// 학교소속회원 정보 session에 저장
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("mberId", memberVO.getMberId());
+		map.put("schulCode",schulVO.getSchulCode());
+		SchulPsitnMberVO schulPsitnMberVO = sessionMapper.getEnterSchulPsitnMberVO(map);
+		request.getSession().setAttribute("SCHOOL_USER_INFO", schulPsitnMberVO);
+			
+		return 0;
+	}
+
+	// 학교/학교소속회원 정보 세션 삭제
+	@Override
+	public int quitSchoolPageAjax(HttpServletRequest request) {
+		// 학교, 학교소속회원 session 삭제
+		request.getSession().removeAttribute("SCHOOL_INFO");        // SchulVO
+		request.getSession().removeAttribute("SCHOOL_USER_INFO");   // SchulPsitnMberVO
+		// 반 세션 또한 삭제
+		request.getSession().removeAttribute("CLASS_INFO");         // ClasStdntVO
+				
+		return 0;
+	}
+
+	// 1차 권한 학생인지 
+	@Override
+	public Boolean isStudent(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.get1Auth(memberVO);
+		if (auth.equals("ROLE_A01001")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 1차 권한 교직원인지 
+	@Override
+	public Boolean isEmployee(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.get1Auth(memberVO);
+		if (auth.equals("ROLE_A01002")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 1차 권한 학부모인지 
+	@Override
+	public Boolean isParent(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.get1Auth(memberVO);
+		if (auth.equals("ROLE_A01003")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 교직원 권한 교장인지
+	@Override
+	public Boolean isPrincipal(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.getEmployeeAuth(memberVO);
+		if (auth.equals("ROLE_A14001")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 교직원 권한 교사인지
+	@Override
+	public Boolean isTeacher(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.getEmployeeAuth(memberVO);
+		if (auth.equals("ROLE_A14002")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 교직원 권한 행정인지
+	@Override
+	public Boolean isAdministration(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.getEmployeeAuth(memberVO);
+		if (auth.equals("ROLE_A14003")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	// 교직원 권한 영양사인지
+	@Override
+	public Boolean isDietitian(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		String auth = authManager.getEmployeeAuth(memberVO);
+		if (auth.equals("ROLE_A14004")) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+}

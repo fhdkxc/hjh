@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.classroom.mapper.DiaryMapper">
+
+	<!-- 일기장  쓰기에서 날씨를 불러오기위해 학교가 소속된 지역을 가져오는 메서드 -->
+	<select id="getSchulArea" parameterType="String" resultType="String">
+		/* kr.or.ddit.classroom.mapper.DiaryMapper.getSchulArea */
+		SELECT 
+			SUBSTR(SCHUL_ADRES, 1, 3)
+		FROM 
+			SCHUL
+		WHERE 
+			SCHUL_CODE = #{schulCode}
+	</select>
+	
+	<!-- 일기장 등록 -->
+	<insert id="addDiaryAct" parameterType="nttVO">
+		/* kr.or.ddit.classroom.mapper.DiaryMapper.addDiaryAct */
+		INSERT INTO NTT (
+				NTT_CODE			/* 게시물코드 */
+			,	NTT_NM				/* 게시물 제목 */
+			,	NTT_CN				/* 게시물 내용 */
+			,	NTT_WRITNG_DT		/* 게시물 등록일시 */
+			,	NTT_ATCH_FILE_CODE	/* 게시물 첨부파일코드 */
+			,	CMMN_NTT_SE			/* 공통 게시물 구분 (어느 게시판의 게시물인지 구분하는 역할) */
+			,	CLAS_CODE			/* 반 코드 */
+			,	SCHUL_CODE			/* 학교코드 */
+			,	MBER_ID				/* 게시물 작성자 */
+			,	WETHR				/* 날씨 */
+		)
+		VALUES (
+				(SELECT NVL(MAX(NTT_CODE), 0) + 1 FROM NTT)
+			,	#{nttNm}
+			,	#{nttCn}
+			,	SYSDATE
+			,	#{nttAtchFileCode}
+			,	'A08006'
+			,	#{clasCode}
+			,	#{schulCode}
+			,	#{mberId}
+			,	#{wethr}
+		)
+	</insert>
+	
+	<!-- 일기장 목록을 불러오는 메서드 -->
+	<select id="getDiaryList" parameterType="diarySearchVO" resultType="nttVO">
+		/* kr.or.ddit.classroom.mapper.DiaryMapper.getDiaryList */
+		WITH T AS (
+		    SELECT 
+		            ROW_NUMBER() OVER (ORDER BY S.NTT_CODE DESC) RNUM
+		        ,   S.*
+		    FROM (
+		        SELECT
+		                N.NTT_CODE
+		            ,   N.NTT_NM
+		            ,   N.NTT_ATCH_FILE_CODE
+		            ,   N.NTT_WRITNG_DT
+		            ,   N.MBER_ID
+		            ,   FN_GET_MBER_NM(N.MBER_ID) MBER_NM
+		            ,   WETHR
+		        FROM 
+		            NTT N
+		        WHERE
+		            	CMMN_NTT_SE = 'A08006'
+            		AND	N.MBER_ID = #{mberId}
+		            <if test="(startDate != null &amp;&amp; !startDate.equals('')) || (endDate != null &amp;&amp; !endDate.equals(''))">
+			            <choose>
+			            	<when test="startDate != null &amp;&amp; (endDate == null || endDate == '')">
+			            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') = #{startDate}
+			            	</when>
+			            	<when test="endDate != null &amp;&amp; (startDate == null || startDate == '')">
+			            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') = #{endDate}
+			            	</when>
+			            	<otherwise>
+			            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') BETWEEN #{startDate} AND #{endDate}
+			            	</otherwise>
+			            </choose>
+		            </if>
+		            <if test="keyword != null || keyword != ''">
+				    AND (
+				    	<choose>
+				    		<when test="searchCondition == 'searchTitle'"> N.NTT_NM LIKE '%' || #{keyword} || '%' </when>
+				    		<when test="searchCondition == 'searchWrter'">  FN_GET_MBER_NM(N.MBER_ID) LIKE '%' || #{keyword} || '%' </when>
+				    		<otherwise>
+				    		(
+				    				N.NTT_NM LIKE '%' || #{keyword} || '%'
+				    			OR	FN_GET_MBER_NM(N.MBER_ID) LIKE '%' || #{keyword} || '%'
+				    		)
+				    		</otherwise>
+				    	</choose>
+				    )
+				    </if>
+		    ) S
+		)
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN (#{currentPage}*#{size}) - (#{size}-1) AND (#{currentPage}*#{size})
+	</select>
+	
+	<!-- 일기장 개수 불러오기 -->
+	<select id="getDiaryTotal" parameterType="diarySearchVO" resultType="int">
+		/* kr.or.ddit.classroom.mapper.DiaryMapper.getDiaryTotal */
+        SELECT
+			COUNT(N.NTT_CODE)
+        FROM 
+            NTT N
+        WHERE
+            	CMMN_NTT_SE = 'A08006'
+            AND	N.MBER_ID = #{mberId}
+            <if test="(startDate != null &amp;&amp; !startDate.equals('')) || (endDate != null &amp;&amp; !endDate.equals(''))">
+	            <choose>
+	            	<when test="startDate != null &amp;&amp; (endDate == null || endDate == '')">
+	            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') = #{startDate}
+	            	</when>
+	            	<when test="endDate != null &amp;&amp; (startDate == null || startDate == '')">
+	            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') = #{endDate}
+	            	</when>
+	            	<otherwise>
+	            		AND TO_CHAR(N.NTT_WRITNG_DT, 'YYYY-MM-DD') BETWEEN #{startDate} AND #{endDate}
+	            	</otherwise>
+	            </choose>
+            </if>
+            <if test="keyword != null || keyword != ''">
+		    AND (
+		    	<choose>
+		    	
+		    		<when test="searchCondition == 'searchTitle'"> N.NTT_NM LIKE '%' || #{keyword} || '%' </when>
+		    		<when test="searchCondition == 'searchWrter'">  FN_GET_MBER_NM(N.MBER_ID) LIKE '%' || #{keyword} || '%' </when>
+		    		<otherwise>
+		    		(
+		    				N.NTT_NM LIKE '%' || #{keyword} || '%'
+		    			OR	FN_GET_MBER_NM(N.MBER_ID) LIKE '%' || #{keyword} || '%'
+		    		)
+		    		</otherwise>
+		    	</choose>
+		    )
+		    </if>
+	</select>
+
+</mapper>

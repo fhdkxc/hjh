@@ -1,0 +1,67 @@
+package kr.or.ddit.classroom.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.classroom.service.NtcnService;
+import kr.or.ddit.vo.ClasVO;
+import kr.or.ddit.vo.NtcnVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/ntcn")
+@Controller
+public class NtcnController {
+
+	@Autowired
+	NtcnService ntcnService;
+	
+	// 알림장 메인 출력
+	@GetMapping("/goToNtcn")
+	public String goToNtcn(HttpServletRequest request, Model model) {
+
+		// 세션에 저장된 클래스 정보 가져오기
+		ClasVO clasVO = (ClasVO) request.getSession().getAttribute("CLASS_INFO");
+		log.info("CLAS_INFO -> " + clasVO);
+		
+		String clasCode = clasVO.getClasCode();
+		
+		model.addAttribute("clasCode", clasCode);
+		
+		return "class/ntcn";
+	}
+	
+	// 알림장 리스트 불러오기
+	@ResponseBody
+	@PostMapping("/ntcnList")
+	public List<NtcnVO> ntcnList(@RequestBody Map<String, Object> map) {
+		log.info("ntcnList -> map: " + map);
+		
+		List<NtcnVO> ntcnVOList = ntcnService.getNoticeList(map);
+		log.info("ntcnList -> ntcnVOList: " + ntcnVOList);
+		 
+		return ntcnVOList;
+	}
+	
+	// 알림 등록 폼 출력
+	@GetMapping("/ntcnInsertForm")
+	public String ntcnInsertForm(@RequestParam("clasCode") String clasCode, Model model) {
+		log.info("ntcnInsertForm -> clasCode: " + clasCode);
+		
+//		model.addAttribute("clasCode")
+		
+		return "class/ntcnInsertForm";
+	}
+}

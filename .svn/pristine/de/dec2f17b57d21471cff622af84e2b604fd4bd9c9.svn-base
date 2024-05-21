@@ -1,0 +1,188 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt"%>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<style>
+/* textarea {
+    border: none;
+    outline: none;
+} */
+</style>
+<script>
+$(function(){
+	let schulCode = "${nttVO.schulCode}";
+	
+	console.log("schulCode",schulCode);
+	
+	$("#saveBtn, #cancelBtn").hide(); //수정(저장, 취소)가림
+	
+	//수정버튼
+	$("#updateBtn").on("click",function(){
+		$("#saveBtn, #cancelBtn").show(); //저장,취소버튼 보임
+		$("#updateBtn, #deleteBtn, #listBtn").hide();//삭제,목록버튼 가림
+		$("#nttNm").removeAttr("readonly"); 
+		$("#nttCn").removeAttr("readonly");
+	});
+	
+	//수정-취소
+	$("#cancelBtn").on("click",function(){
+		$("#nttNm").attr("readonly",true);
+		$("#nttCn").attr("readonly",true);
+		
+		$(".general").css("display","block");
+		$(".edit").css("display","none");
+	});
+	
+	//수정-저장
+	$("#saveBtn").on("click",function(){
+		
+		let nttNm = $("#nttNm").val(); //제목
+		let nttCn = $("#nttCn").val(); //내용
+		//let nttAtchFileCode = $("#nttAtchFileCode").val(); //첨부파일
+		let nttCode = "${nttVO.nttCode}";
+		
+		let data = {
+				"schulCode":"${param.schulCode}",
+				"nttNm":nttNm,
+				"nttCn":nttCn,
+				//"nttAtchFileCode":nttAtchFileCode,
+				"nttCode":nttCode
+		};
+		console.log("data:",data);
+		
+		$.ajax({
+			url:"/school/dataRoomUpdateAjax",
+			contentType:"application/json;charset=utf-8",
+			data:JSON.stringify(data),
+			type:"post",
+			dataType:"text",
+			beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+			success:function(result){
+				console.log("result :",result);
+				//목록에 반영
+				$(".product-payment-inner-st").each(function(){
+				    let nttNm = $(this).find("#nttNm").val(); // 제목
+				    let nttCn = $(this).find("#nttCn").val(); // 내용
+				    
+				    // 각 제목과 내용을 업데이트
+				    $(this).find("label[for='nttNm']").text(nttNm);
+				    $(this).find("label[for='nttCn']").text(nttCn);
+				});
+				location.href = "/school/dataRoomDetail?schulCode="+schulCode+"&nttCode="+"${nttVO.nttCode}";
+			}
+		}); //ajax끝
+	});//수정 끝
+	
+	
+	
+	//삭제
+	$("#deleteBtn").on("click",function(){
+		if(!confirm("삭제하시겠습니까?")){
+			alert("삭제가 취소되었습니다.");
+			return;
+		}
+		
+		let nttNm = "${nttVO.nttNm}";
+		let nttCode = "${nttVO.nttCode}";
+		
+		let data = {
+				"schulCode":"${param.schulCode}",
+				"nttNm":nttNm,
+				"nttCode":nttCode
+		};
+		
+		console.log("data : ", data);
+		
+		$.ajax({
+			url:"/school/dataRoomDeleteAjax",
+			contentType:"application/json;charset=utf-8",
+			data:JSON.stringify(data),
+			type:"post",
+			dataType:"text",
+			beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+			success:function(result){
+				console.log("result:",result);
+				location.href = "/school/dataRoom?schulCode="+schulCode;
+			}
+		});
+	}); //삭제 끝
+	
+	
+	//목록버튼
+	$("#listBtn").on("click",function(){
+		location.href = "/school/dataRoom?schulCode="+schulCode;
+	});
+	
+	//리스트ajax
+	
+});
+</script>
+
+<div class="product-payment-inner-st res-mg-t-30 analysis-progrebar-ctn">
+	<div id="myTabContent" class="tab-content custom-product-edit">
+		<div class="product-tab-list tab-pane fade active in" id="reviews">
+			<div class="row">
+				<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+					<div class="review-content-section">
+						<div class="row">
+							<div class="col-lg-3 col-md-3 col-sm-3 col-xs-6">
+								<div class="address-hr biography">
+									<label for="nttNm">제목</label>
+									<input type="text" id="nttNm" class="form-control"
+									value="${nttVO.nttNm}" required readonly/>
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-3 col-sm-3 col-xs-6">
+								<div class="address-hr biography">
+									<label for="mberNm">작성자</label>
+									<input type="text" id="mberNm" class="form-control"
+									value="${nttVO.mberNm}" readonly />
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-3 col-sm-3 col-xs-6">
+								<div class="address-hr biography">
+									<label for="nttWritngDt">작성일시</label>
+									<input type="text" id="nttWritngDt" class="form-control"
+									value="<fmt:formatDate value="${nttVO.nttWritngDt}"
+									pattern="yyyy-MM-dd" />" readonly />
+									
+									
+								</div>
+							</div>
+							<div class="col-lg-3 col-md-3 col-sm-3 col-xs-6">
+								<div class="address-hr biography">
+									<label for="nttRdcnt">조회수</label>
+									<input type="text" id="nttRdcnt" class="form-control"
+									value="${nttVO.nttRdcnt}" readonly />
+								</div>
+							</div>
+						</div>
+						<hr>
+						<div class="row">
+							<div class="col-lg-12">
+								<div class="content-profile">
+									<label for="nttCn">내용</label>
+									<input type="text" id="nttCn" class="form-control"
+									value="${nttVO.nttCn}" required readonly/>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-10 text-right">
+				<!-- 일반모드 -->
+				<button type="button" id="updateBtn" class="btn btn-custon-rounded-two btn-primary general">수정</button>
+				<button type="button" id="deleteBtn" class="btn btn-custon-rounded-two btn-default general">삭제</button>
+				<button type="button" id="listBtn" class="btn btn-custon-rounded-two btn-success general">목록</button>
+				<!-- 수정모드 -->
+				<button type="button" id="saveBtn" class="btn btn-custon-rounded-two btn-default edit">저장</button>
+				<button type="button" id="cancelBtn" class="btn btn-custon-rounded-two btn-success edit">취소</button>
+			</div>
+		</div>
+	</div>
+</div>

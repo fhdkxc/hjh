@@ -1,0 +1,20 @@
+package kr.or.ddit.admin.service;
+
+import java.util.List;
+
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.CmmnDetailCodeVO;
+import kr.or.ddit.vo.SttemntSearchVO;
+import kr.or.ddit.vo.SttemntVO;
+
+public interface AdminService {
+
+	// 신고 게시판 목록을 출력하는 메서드
+	public ArticlePage<SttemntSearchVO> loadSttemntList(SttemntSearchVO sttemntSearchVO);
+
+	// 신고 내용 목록을 불러오는 메서드
+	public List<CmmnDetailCodeVO> getComplaintCn();
+
+	// 신고 내용을 저장하는 메서드
+	public int addComplaint(SttemntVO sttemntVO);
+}

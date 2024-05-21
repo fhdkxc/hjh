@@ -1,0 +1,41 @@
+package kr.or.ddit.classroom.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.classroom.mapper.ClassroomMapper;
+import kr.or.ddit.classroom.mapper.NtcnMapper;
+import kr.or.ddit.classroom.service.ClassroomMainService;
+import kr.or.ddit.task.mapper.TaskMapper;
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.NtcnVO;
+import kr.or.ddit.vo.TaskVO;
+
+@Service
+public class ClassroomMainServiceImpl implements ClassroomMainService {
+
+	@Autowired
+	ClassroomMapper classroomMapper;
+	@Autowired
+	TaskMapper taskMapper;
+	@Autowired
+	NtcnMapper ntcnMapper;
+	
+	@Override
+	public List<ClasStdntVO> getStdList(Map<String, Object> map) {
+		return classroomMapper.getStdList(map);
+	}
+
+	@Override
+	public List<TaskVO> getTaskList(Map<String, Object> map) {
+		return taskMapper.getTaskList(map);
+	}
+
+	@Override
+	public List<NtcnVO> getNtcnList(Map<String, Object> map) {
+		return ntcnMapper.getNtcnList(map);
+	}
+}

@@ -1,0 +1,479 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+<script type="text/javascript" src="/resources/js/commonFunction.js"></script>
+<style>
+	#ComplaintContainer h3 {
+		font-size: 2.2rem;
+		text-align: center;
+		margin-top: 60px;
+		backdrop-filter: blur(4px);
+		background-color: rgba(255, 255, 255, 1);
+		border-radius: 50px;
+		box-shadow: 35px 35px 68px 0px rgba(145, 192, 255, 0.5), inset -8px -8px 16px 0px rgba(145, 192, 255, 0.6), inset 0px 11px 28px 0px rgb(255, 255, 255);
+		width: 370px;
+		padding-top: 25px;
+		padding-bottom: 35px;
+		margin: auto;
+		margin-top: 10px;
+		margin-bottom: 25px;
+	}
+
+	#ComplaintContainer {
+		min-height: 824px;
+	}
+	
+	#ComplaintContainer .custom-pagination {
+		max-width:302px;
+		margin: auto;
+	}
+	
+	#ComplaintContainer .custom-pagination .pagination {
+		 width: max-content;
+	}
+	
+	.searchForm {
+		height: 40px;
+		border: 1px solid #ddd;
+		border-radius: 5px;
+		padding: 15px 20px;
+	}
+	
+	#searchBtn,#insertBtn {
+		background: #333;
+		height: 40px;
+		border: none;
+		padding: 10px 15px;
+		border-radius: 10px;
+		font-family: 'Pretendard' !important;
+		font-weight: 600;
+		color: #fff;
+	}
+	
+	#searchBtn:hover, #insertBtn:hover {
+		background: #ffd77a;
+		color:#333;
+		transition:all 1s;
+		font-weight: 700;
+	}
+	
+	#insertBtn {
+		background: #006DF0;
+	}
+	
+	#searchCondition {
+		height: 40px;
+		border: 1px solid #ddd;
+		padding-left: 10px;
+	}
+	
+	.custom-datatable-overright table tbody tr.none-tr td:hover {
+		background: #fff!imporant;
+	}
+
+	.singleline-ellipsis {
+		width: 423.86px;
+		overflow:hidden; 
+		text-overflow:ellipsis; 
+ 		white-space:nowrap; 
+ 		cursor: pointer;
+	}
+	
+	/* 화면 반으로 나누는 css */
+	/* 왼쪽 영역 스타일 */
+	.left-panel {
+		width: 50%;
+		float: left;
+		padding: 20px;
+		box-sizing: border-box;
+	}
+	
+	/* 오른쪽 영역 스타일 */
+	.right-panel {
+		width: 50%;
+		float: left;
+		padding: 20px;
+		box-sizing: border-box;
+	}
+</style>
+<script>
+/** 신고 목록을 불러오는 함수 */
+function fn_loadSttemntList(formData) {
+	$.ajax({
+		url: "/admin/loadSttemntList",
+		processData: false,
+		contentType: false,
+		type: "post",
+		data: formData,
+		dataType: "json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success: function(res) {
+			let html = "";
+			
+			if (res.content == null || res.content == '') {
+				html += `<tr><td colspan='9' style="text-align: center;">신고 내용이 없습니다.</td></tr>`;
+			} else {
+				$.each(res.content, function(idx, cnsltVO) {
+					let rowNum = formData.currentPage - 1;		// 행의 첫 번호
+					
+					html += `<tr>
+								<td>`;
+					html += rowNum > 0 ? `\${(currentPage-1) + "" + (idx + 1)}` : `\${(idx + 1)}`;
+					html += 	`</td>
+								<td>`;
+					if (`\${cnsltVO.nttSe}` === "bbsAlbum") {
+						html += `학급 갤러리`;
+					} else {
+						html += `자유 게시판`;
+					}
+						html += `</td>
+								<td class="nttCodeTitle">\${cnsltVO.nttCode}</td>
+								<td>\${cnsltVO.cmmnSttemntCnNm}</td>
+								<td>\${cnsltVO.wrterId}</td>
+								<td>\${cnsltVO.sttemntId}</td>
+								<td>\${cnsltVO.rceptDt}</td>`;
+					if (`\${cnsltVO.processDt}` === "null" || `\${cnsltVO.processDt}` === "") {
+						html +=	`<td>미확인</td>`;
+					} else {
+						html +=	`<td>\${cnsltVO.processDt}</td>`;
+					}
+						html += `<td>\${cnsltVO.cmmnSttemntProcessSttusNm}</td>
+							</tr>`;
+				}); // end each
+
+			} // end else
+			
+			document.querySelector("#cnsltTbody").innerHTML = html;
+			document.querySelector(".custom-pagination").innerHTML = res.pagingArea;
+		}
+	});
+}
+
+window.onload = function() {
+	let currentPage = `${param.currentPage}`;
+	let keyword = "";
+	let size = 10;
+		
+	if (currentPage == null || currentPage == '') { currentPage = 1; }
+
+	let bbsAll = document.querySelector("#bbsAll");							// 게시판 구분 전체
+	let rceptDtRd = document.querySelector("input[name='rceptDtRd']");		// 접수 일자 선택
+	let recptStDt = document.querySelector("#rceptStartDate");				// 접수 일자 시작일
+	let rceptEdDt = document.querySelector("#rceptEndDate");				// 접수 일자 종료일
+	let processDtRd = document.querySelector("input[name='processDtRd']");	// 처리 일자 선택
+	let processStDt = document.querySelector("#processStartDate");			// 처리 일자 시작일
+	let processEdDt = document.querySelector("#processEndDate");			// 처리 일자 종료일
+	let sttusAll = document.querySelector("#sttusAll");						// 상태 전체
+	
+	let formData = new FormData();
+	formData.append("nttSe", "bbsAll");
+	formData.append("rceptDtRd", "rceptAll");
+	formData.append("processDtRd", "processAll");
+	formData.append("currentPage", currentPage);
+	formData.append("cmmnDetailCode", "sttusAll");
+	formData.append("size", size);
+
+	fn_loadSttemntList(formData);
+	
+	// 제목을 클릭하면 div가 반으로 나뉘는 함수
+	document.addEventListener("click", function(event) {
+	    if (event.target.classList.contains("nttCodeTitle")) {	// 클릭된 요소가 nttCodeTitle 클래스를 가진 요소인지 확인
+	        console.log("this ==> " + event.target.textContent);
+	    }
+	    
+	    $( "#detailPage" ).load( "/gallery/galleryDetail?atchFileCode=" + event.target.textContent + "&complaint=mod" );
+	    
+	});
+
+	// 게시판 구분 전체 선택 설정 시작
+	bbsAll.addEventListener("click", function() {
+		let bbsVal = document.querySelectorAll(".bbsSeCB");
+		if (this.checked == true) {
+			bbsVal.forEach(function(bbsSeCheckedVal){
+				bbsSeCheckedVal.checked = false;
+			});
+		};
+	});
+
+	// 게시판 구분 하위 항목을 선택하면 전체 선택이 해제
+	let bbs = document.querySelectorAll("input[type='checkbox'].bbsSeCB");
+	bbs.forEach(function(bbsClass) {
+		bbsClass.addEventListener("click", function() {
+			let bbsChecked = document.querySelectorAll("input[type='checkbox'].bbsSeCB:checked");
+			let bbsTotal = bbs.length;
+			let bbsCheckedTotal = bbsChecked.length;
+
+			if ( bbsTotal == bbsCheckedTotal ) {
+				bbsAll.checked = true;
+				bbs.forEach(function(check) { check.checked = false; })
+			} else {
+				bbsAll.checked = false;
+			}
+		});
+	})
+	// 게시판 구분 전체 선택 설정 끝
+
+	// 상태 전체 선택 설정 시작
+	sttusAll.addEventListener("click", function() {
+		let sttusVal = document.querySelectorAll(".sttemntSttusCB");
+		if (this.checked == true) {
+			sttusVal.forEach(function(sttusCheckedVal){
+				sttusCheckedVal.checked = false;
+			});
+		};
+	});
+
+	let sttus = document.querySelectorAll("input[type='checkbox'].sttemntSttusCB");
+	sttus.forEach(function(sttusClass) {
+		sttusClass.addEventListener("click", function() {
+			let sttusChecked = document.querySelectorAll("input[type='checkbox'].sttemntSttusCB:checked");
+			let sttusTotal = sttus.length;
+			let sttusCheckedTotal = sttusChecked.length;
+
+			if ( sttusTotal == sttusCheckedTotal ) {
+				sttusAll.checked = true;
+				sttus.forEach(function(check) { check.checked = false; })
+			} else {
+				sttusAll.checked = false;
+			}
+		})
+	});
+	// 상태 전체 선택 설정 끝
+
+	// 접수 일자의 연도-월-일을 클릭하면 기간 선택으로 자동 선택되는 함수
+	document.querySelectorAll(".rceptDate").forEach(function(recptDt) {
+		recptDt.addEventListener("click", function(e) {
+			let rcept = document.querySelector("input[name='rceptDtRd'][value='rceptCustom']");
+			console.log("value 값 확인 => " + rcept.value);
+			
+			rcept.checked = "true";
+		});
+	});
+	
+	// 처리 일자의 연도-월-일을 클릭하면 기간 선택으로 자동 선택되는 함수
+	document.querySelectorAll(".processDate").forEach(function(processDt) {
+		processDt.addEventListener("click", function(e) {
+			let process = document.querySelector("input[name='processDtRd'][value='processCustom']");
+			console.log("value 값 확인 => " + process.value);
+			
+			process.checked = "true";
+		});
+	});
+
+	// 시작 날짜를 클릭하면 종료 날짜의 최소 시작 날짜가 시작 날짜로 설정되는 함수
+	recptStDt.addEventListener("input", function() {
+		let startDt = recptStDt.value;
+		rceptEdDt.setAttribute("min", startDt);
+	});
+
+	// 시작 날짜를 클릭하면 종료 날짜의 최소 시작 날짜가 시작 날짜로 설정되는 함수
+	processStDt.addEventListener("input", function() {
+		let startDt = processStDt.value;
+		processEdDt.setAttribute("min", startDt);
+	});
+	
+	// 검색 버튼 클릭 시 값 보내서 목록 가져오기
+	document.querySelector("#searchBtn").addEventListener("click", function() {
+		let bbsSeCB = document.querySelector("input[name='bbsSeCB']:checked").value;
+		let rceptDtRd = document.querySelector("input[name='rceptDtRd']:checked").value;
+		rceptStDt = recptStDt.value;
+		rceptEdDt = rceptEdDt.value;
+		let processDtRd	= document.querySelector("input[name='processDtRd']:checked").value;
+		processStDt = processStDt.value;
+		processEdDt = processEdDt.value;
+		
+		// 선택된 게시판 구분 항목
+		document.querySelectorAll("input[name='bbsSeCB']:checked").forEach(function(recptRd) {
+			recptRd.addEventListener("change", function(e) {
+				let recptVal = e.target.value;
+				console.log("recptVal ==> " + recptVal);
+				document.querySelector("#ComplaintContainer").style.width = "70%";
+			});
+		});
+
+		console.log("searchBtn onclick ===============================================");
+		console.log("bbsSeCB => " + bbsSeCB);
+		console.log("rceptDtRd => " + rceptDtRd);
+		console.log("rceptStDt => " + rceptStDt);
+		console.log("rceptEdDt => " + rceptEdDt);
+		console.log("processDtRd => " + processDtRd);
+		console.log("processStDt => " + processStDt);
+		console.log("processEdDt => " + processEdDt);
+	});
+}
+</script>
+<div class="left-panel">
+	<div id="ComplaintContainer">
+		<div class="sparkline13-list">
+			<h3>
+				<img src="/resources/images/admin/complaint2.png" style="width:50px; display:inline-block; vertical-align:middel;">		
+				신고 게시판
+				<img src="/resources/images/admin/complaint.png" style="width:50px; display:inline-block; vertical-align:middel;">
+			</h3>
+			<div class="sparkline13-graph">
+				<div class="datatable-dashv1-list custom-datatable-overright">
+					<div class="bootstrap-table">
+						<div class="fixed-table-toolbar">
+							<!-- 검색 조건 시작 -->
+							<table style="width: 100%;">
+								<tr>
+									<!-- 게시판 구분 = 자유 게시판, 갤러리 -->
+									<th>보기</th>
+									<td colspan="7">
+										<input type="radio" id=""  name="viewType" value="" class="" checked/>
+										<label for="">개별</label>
+										<input type="radio" id=""  name="viewType" value="" class=""/>
+										<label for="">누적</label>
+									</td>
+								</tr>
+								<tr>
+									<!-- 게시판 구분 = 자유 게시판, 갤러리 -->
+									<th>게시판 구분</th>
+									<td colspan="7">
+										<input type="checkbox" id="bbsAll" name="bbsSeCB" value="bbsAll" checked/>
+										<label for="bbsAll">전체</label>
+										<input type="checkbox" id="bbsLbrty"  name="bbsSeCB" value="bbsLbrty" class="bbsSeCB"/>
+										<label for="bbsLbrty">자유 게시판</label>
+										<input type="checkbox" id="bbsAlbum"  name="bbsSeCB" value="bbsAlbum" class="bbsSeCB"/>
+										<label for="bbsAlbum">학급 갤러리</label>
+									</td>
+								</tr>
+								<tr>
+									<!-- 접수 일자 = 날짜 형식 -->
+									<th>접수 일자</th>
+									<td>
+										<input type="radio" id="rceptAll" name="rceptDtRd" value="rceptAll" checked />
+										<label for="rceptAll">전체</label>
+										<input type="radio" id="rcept7" name="rceptDtRd" value="rcept7" />
+										<label for="rcept7">일주일 전</label>
+										<input type="radio" id="rcept30" name="rceptDtRd" value="rcept30" />
+										<label for="rcept30">한달 전</label>
+										<input type="radio" id="rceptToday" name="rceptDtRd" value="rceptToday" />
+										<label for="rceptToday">오늘</label>
+										<input type="radio" id="rceptCustom" name="rceptDtRd" value="rceptCustom" />
+										<label for="rceptCustom">기간 선택</label>
+									</td>
+									<td class="input-daterange input-group" id="datepicker" style="text-align: left;">
+										<input type="date" class="form-control rceptDate" id="rceptStartDate" name="rceptStartDate"/>
+										<span class="input-group-addon">to</span>
+										<input type="date" class="form-control rceptDate" id="rceptEndDate" name="rceptEndDate"/>
+									</td>
+									<td width="10%"></td>
+									<th>처리 일자</th>
+									<td>
+										<input type="radio" id="processAll" name="processDtRd" value="processAll" checked />
+										<label for="processAll">전체</label>
+										<input type="radio" id="process7" name="processDtRd" value="process7" />
+										<label for="process7">일주일 전</label>
+										<input type="radio" id="process30" name="processDtRd" value="process30" />
+										<label for="process30">한달 전</label>
+										<input type="radio" id="processToday" name="processDtRd" value="processToday" />
+										<label for="processToday">오늘</label>
+										<input type="radio" id="processCustom" name="processDtRd" value="processCustom" />
+										<label for="processCustom">기간 선택</label>
+									</td>
+									<td class="input-daterange input-group" id="datepicker">
+										<input type="date" class="form-control processDate" id="processStartDate" name="processStartDate"/>
+										<span class="input-group-addon">to</span>
+										<input type="date" class="form-control processDate" id="processEndDate" name="processEndDate"/>
+									</td>
+									<td width="10%"></td>
+								</tr>
+								<tr>
+									<th>상태</th>
+									<td colspan="6">
+										<input type="checkbox" id="sttusAll" name="sttemntSttusCB" value="sttusAll" checked/>
+										<label for="sttusAll">전체</label>
+										<input type="checkbox" id="sttusUncnfrm"  name="sttemntSttusCB" value="sttusUncnfrm" class="sttemntSttusCB" />
+										<label for="sttusUncnfrm">미확인</label>
+										<input type="checkbox" id="sttusAbnrml"  name="sttemntSttusCB" value="sttusAbnrml" class="sttemntSttusCB" />
+										<label for="sttusAbnrml">이상 없음</label>
+										<input type="checkbox" id="sttusStop"  name="sttemntSttusCB" value="sttusStop" class="sttemntSttusCB" />
+										<label for="sttusStop">정지</label>								
+									</td>
+								</tr>
+								<tr>
+									<th colspan="8" style="text-align: right;">
+										<select name="searchCondition" id="searchCondition" name="searchCondition">
+											<option value="searchAll" selected>전체</option>
+											<option value="sttemntCode">게시판 번호</option>
+											<option value="writerId">작성자</option>
+											<option value="complaintId">신고자</option>
+										</select>
+										<input class="searchForm" type="text" id="keyword" name="keyword">
+										<button type="submit" id="searchBtn">검색</button>
+									</th>
+								</tr>
+							</table>													
+							<!-- 검색 조건 끝 -->
+						</div>
+						<div class="fixed-table-container" style="padding-bottom: 0px;">
+							<div class="fixed-table-body">
+								<table id="table" data-toggle="table" data-pagination="true"
+									data-search="true" data-show-columns="true"
+									data-show-pagination-switch="true" data-show-refresh="true"
+									data-key-events="true" data-show-toggle="true"
+									data-resizable="true" data-cookie="true"
+									data-cookie-id-table="saveId" data-show-export="true"
+									data-click-to-select="true" data-toolbar="#toolbar"
+									class="table table-hover JColResizer">
+									<thead>
+										<tr style="font-size:1rem;">
+											<th style="width: 5%;">
+												<div class="th-inner ">번호</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">게시판 구분</div>
+												<div class="fht-cell" ></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">게시판 번호</div>
+												<div class="fht-cell" ></div>
+											</th>
+											<th style="width: 25%;">
+												<div class="th-inner ">신고 사유</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">작성자</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">신고자</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">접수 일자</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">처리 일자</div>
+												<div class="fht-cell"></div>
+											</th>
+											<th style="width: 10%;">
+												<div class="th-inner ">처리 상태</div>
+												<div class="fht-cell"></div>
+											</th>
+										</tr>
+									</thead>
+									<tbody id="cnsltTbody" style="vertical-align: middle;"></tbody>
+								</table>
+							</div>
+							<!-- 페이징 -->
+							<div class="custom-pagination"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="right-panel">
+	<div id="detailPage"></div>
+</div>

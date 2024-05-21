@@ -1,0 +1,406 @@
+<%@page import="kr.or.ddit.vo.MemberVO"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<style>
+#profileImg{
+   width: 200px; height: 200px;
+   border-radius: 70%;
+   object-fit: cover;
+}
+</style>
+<script type="text/javascript" src="/resources/js/jquery.min.js" ></script>
+<script type="text/javascript">
+
+<% MemberVO memVO = (MemberVO) request.getAttribute("memVO"); %>
+
+$(function(){
+	// 최초 1회 비밀번호 변경 요구
+	var password = "${memVO.password}";
+	
+	// 비밀번호 변경 모달 창 띄우기
+	if(password == "$2a$10$z77PP1RfeUMJJFWY0p47Re2/wajq56UYywuzqGapxbRGMFDMeGZWG"){
+		$("#UpdatePasswordModal").modal('show');
+		$("#firstPwChk").removeAttr("style");
+	};
+	
+	// 비밀번호 변경
+	$("#UpdatePasswordBtn").on("click", function(){
+		var mberId = ${memVO.mberId};
+		var pw1 = $("#password1").val();
+		var pw2 = $("#password2").val();
+		
+	    // 비밀번호 유효성 검사
+	    if(pw1 != pw2 || pw1 == "" || pw2 == ""){
+	        $("#pwChk").removeAttr("style");
+	        $("#pwChk").html("비밀번호가 일치하지 않거나 올바르게 입력되지 않았습니다.");
+	        return;
+	    }
+		
+    	var formData = new FormData();
+    	
+    	formData.append("password", pw1);
+    	formData.append("mberId", mberId);
+		
+    	$.ajax({
+    		url: "/student/updatePassword",
+    		processData: false,
+    		contentType: false,
+    		type:"post",
+    		data:formData,
+    		dataType:"text",
+    		beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+    		success: function(res){
+    			location.href = "/student/mypage";
+    		}
+    	});
+	});
+	
+	// 사진 올리기
+    $("#inputImage").on("input", function() {
+        var uploadFile = $(this).val();
+        console.log("uploadFile: " + uploadFile);
+        
+        // 사진 업로드 취소 시
+        if(uploadFile == null){
+        	history.go(-1);
+        }
+        
+        // 파일 이름 추출하기(ex: 루피.jpg)
+        var index = uploadFile.lastIndexOf('\\');
+        console.log("index: " + index);
+        var fileName = uploadFile.substring(index + 1);
+        console.log("fileName: " + fileName);
+
+        var imgSrc = "/resources/images/student/" + fileName;
+		
+        if(index > 0){
+			$("#profileImg").attr("src", imgSrc);        	
+        };
+		
+        $("#mberImage").val(fileName);
+        
+        // 올린 사진 원래대로 변경하는 작업도 추가...
+    });
+
+    // 수정 모드 전환
+    $("#updateBtn").on("click", function() {
+		$(".form-control").removeAttr("readonly");
+		$("#updateLabel").removeAttr("style");
+		$("#updateBtn").attr("type", "hidden");
+		$("#updateProfileBtn").removeAttr("style");
+		$("#cancelBtn").removeAttr("style");
+    });
+    
+    // 수정 취소 -> 조회 모드로 다시 전환
+    $("#cancelBtn").on("click", function() {
+		$(".form-control").prop("readonly", true);
+		$("#updateLabel").attr("style", "display: none;");
+		$("#updateBtn").attr("type", "button");
+		$("#updateProfileBtn").attr("style", "display: none;");
+		$("#cancelBtn").attr("style", "display: none;");
+		
+		$("#profileImg").attr("src", "/resources/upload/profile/${memVO.mberImage}");
+		
+    });
+    
+    // 수정하기
+    $("#updateProfileBtn").on("click", function(){
+    	
+    	var mberId = "${memVO.mberId}";
+    	var mberNm = $("#mberNm").val();
+    	var password = $("#password").val();
+    	var moblphonNo = $("#moblphonNo").val();
+    	var mberEmail = $("#mberEmail").val();
+    	var mberAdres = $("#mberAdres").val();
+    	var mberImage = $("#mberImage").val();
+    	
+    	var formData = new FormData();
+    	
+    	formData.append("mberId", mberId);
+    	formData.append("mberNm", mberNm);
+    	formData.append("password", password);
+    	formData.append("moblphonNo", moblphonNo);
+    	formData.append("mberEmail", mberEmail);
+    	formData.append("mberAdres", mberAdres);
+    	formData.append("mberImage", mberImage);
+    	
+    	// 업로드한 사진 가져오기
+   		formData.append("uploadFile", $("#inputImage")[0].files[0]);
+    	
+    	console.log("formData", formData);
+    	
+    	$.ajax({
+    		url: "/student/updateProfile",
+    		processData: false,
+    		contentType: false,
+    		type:"post",
+    		data:formData,
+    		dataType:"json",
+    		beforeSend:function(xhr){
+				xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+			},
+    		success: function(res){
+    			//res : memberVO
+    			console.log("res -> ", res);
+//     	        var imgSrc = "/resources/upload/profile/" + res.mberImage;
+    	        var imgSrc = "D:\\upload\\profile\\" + res.mberImage;
+    			
+    			// 조회 모드로 다시 전환
+    			$(".form-control").prop("readonly", true);
+    			$("#updateLabel").attr("style", "display: none;");
+    			$("#updateBtn").attr("type", "button");
+    			$("#updateProfileBtn").attr("style", "display: none;");
+    			$("#cancelBtn").attr("style", "display: none;");
+    			
+//     			setTimeout(function(){
+// 	    			$("#profileImg").attr("src", imgSrc);
+//     			}, 5000);
+    		}
+    	});
+    });
+    
+});
+</script>
+
+<h1>학생 마이페이지</h1>
+<%-- <p>학생 정보: ${memVO}</p> --%>
+<%-- <p>학교 정보: ${mySchulList}</p> --%>
+<%-- <p>클래스 정보: ${myClassList}</p> --%>
+<%-- <p>회원 이미지: ${memVO.mberImage}</p> --%>
+
+<div class="row">
+	<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+		<div class="product-payment-inner-st">
+			<div id="myTabContent" class="tab-content custom-product-edit">
+				<div class="product-tab-list tab-pane fade active in"
+					id="description">
+					
+					<form action="/student/updateInfo" method="post" enctype="multipart/form-data">
+<!-- 					<div class="row"> -->
+<!-- 						<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12"> -->
+<!-- 							프로필 -->
+<!-- 							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-6"> -->
+<!-- 								<div class="col-lg-6 col-md-12"> -->
+<!-- 									<div class="profile-info-inner"> -->
+<!-- 										<div class="profile-img"> -->
+<!-- 											<img id="profileImg" -->
+<%-- 												src="/resources/upload/profile/${memVO.mberImage}" --%>
+<!-- 												alt=""> -->
+<!-- 										</div> -->
+<!-- 										<div class="profile-details-hr"> -->
+<!-- 											<div class="row" style="text-align: center;"></div> -->
+<!-- 										</div> -->
+<!-- 									</div> -->
+<!-- 								</div> -->
+<!-- 							</div> -->
+<!-- 							내 정보 -->
+<!-- 							<div class="col-lg-6 col-md-6 col-sm-6 col-xs-6"> -->
+<!-- 								<div class="devit-card-custom"> -->
+<!-- 									<div class="form-group"> -->
+<!-- 										<p> -->
+<!-- 											이름 <input id="mberNm" name="mberNm" type="text" class="form-control" -->
+<%-- 												value="${memVO.mberNm}" readonly> --%>
+<!-- 										</p> -->
+<!-- 									</div> -->
+<!-- 									<div class="form-group"> -->
+<!-- 										<p> -->
+<!-- 											핸드폰번호 <input id="moblphonNo" name="moblphonNo" type="text" -->
+<%-- 												class="form-control" value="${memVO.moblphonNo}" readonly> --%>
+<!-- 										</p> -->
+<!-- 									</div> -->
+<!-- 									<div class="form-group"> -->
+<!-- 										<div> -->
+<!-- 											비밀번호 -->
+<!-- 											<input id="password" name="password" type="password" class="form-control" -->
+<%-- 												value="${memVO.password}" readonly> --%>
+<!-- 										</div> -->
+<!-- 									</div> -->
+<!-- 									<div class="form-group"> -->
+<!-- 										<p> -->
+<!-- 											이메일 <input id="mberEmail" name="mberEmail" type="text" class="form-control" -->
+<%-- 												value="${memVO.mberEmail}" readonly> --%>
+<!-- 										</p> -->
+<!-- 									</div> -->
+<!-- 									<div class="form-group"> -->
+<!-- 										<p> -->
+<!-- 											주소 <input id="mberAdres" name="mberAdres" type="text" class="form-control" -->
+<%-- 												value="${memVO.mberAdres}" readonly> --%>
+<!-- 										</p> -->
+<!-- 									</div> -->
+<!-- 								</div> -->
+<!-- 							</div> -->
+
+<!-- 						</div> -->
+<!-- 					</div> -->
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- ////////////////////////////////////////// -->
+
+<div class="row">
+	<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+		<div class="product-payment-inner-st">
+			<ul id="myTabedu1" class="tab-review-design">
+				<li class="active"><a href="#description">내 정보</a></li>
+				<li class=""><a href="#reviews">학교 정보</a></li>
+				<li class=""><a href="#INFORMATION">클래스 정보</a></li>
+			</ul>
+			<div id="myTabContent" class="tab-content custom-product-edit">
+				<div class="product-tab-list tab-pane fade active in" id="description">
+					<form action="/student/updateInfo" method="post" enctype="multipart/form-data">
+					<div class="row">
+						<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+							<div class="library-book-area mg-t-30">
+								<div class="container-fluid">
+									<div class="row">
+										<div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
+											<div class="single-cards-item">
+												<div class="profile-img" style="text-align: center;">
+													<img id="profileImg"
+														src="/upload/profile/<%=memVO.getMberImage()%>" alt="">
+												</div>
+												<div class="profile-details-hr">
+													<div class="row" style="text-align: center;"></div>
+												</div>
+												<div class="single-product-text">
+													<div class="devit-card-custom">
+														<div class="form-group">
+															<p>
+																이름 <input id="mberNm" name="mberNm" type="text"
+																	class="form-control" value="${memVO.mberNm}" readonly>
+															</p>
+														</div>
+														<div class="form-group">
+															<p>
+																핸드폰번호 <input id="moblphonNo" name="moblphonNo"
+																	type="text" class="form-control" value="${memVO.moblphonNo}" readonly>
+															</p>
+														</div>
+														<div class="form-group">
+															<p>
+																이메일 <input id="mberEmail" name="mberEmail" type="text"
+																	class="form-control" value="${memVO.mberEmail}" readonly>
+															</p>
+														</div>
+														<div class="form-group">
+															<p>
+																주소 <input id="mberAdres" name="mberAdres" type="text"
+																	class="form-control" value="${memVO.mberAdres}" readonly>
+															</p>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
+											<div class="white-box">
+												<h3 class="box-title">소속 학교 정보</h3>
+												<ul class="basic-list">
+													<li>학교 명: ${mySchulList[0].schulVOList[0].schulNm}</li>
+													<li>학교 주소: ${mySchulList[0].schulVOList[0].schulAdres}</li>
+													<li>전화번호: ${mySchulList[0].schulVOList[0].schulTlphonNo}</li>
+													<li>소속 상태: ${mySchulList[0].schulPsitnSttusNm} 중</li>
+													<li>학년: ${mySchulList[0].grade} 학년</li>
+												</ul>
+											</div>
+										</div>
+
+
+										<div class="col-lg-4 col-md-4 col-sm-4 col-xs-12">
+											<div class="white-box">
+												<h3 class="box-title">소속 클래스 정보</h3>
+												<ul class="basic-list">
+													<li>클래스 명: ${myClassList[0].clasVOList[0].clasNm}</li>
+													<li>생성 연도: ${myClassList[0].clasVOList[0].clasYear}</li>
+													<li>학급 번호: ${myClassList[0].clasInNo}번</li>
+													<li>학급 내 역할: ${myClassList[0].cmmnStdntClsfNm} </li>
+												</ul>
+											</div>
+												
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- 내 정보 -->
+							
+                             <div class="row">
+                                 <div class="col-lg-12">
+                                    <div class="payment-adress">
+                                    <label for="inputImage" id="updateLabel" style="display: none;"
+                                       class="btn btn-primary waves-effect waves-light">
+                                       <input type="file" accept="image/*" name="uploadFile" id="inputImage" class="hide" />사진 업로드
+                                    </label>
+                                    <input type="hidden" name="mberImage" id="mberImage" value="">
+                                    <input type="button" id="updateBtn" class="btn btn-primary waves-effect waves-light" value="수정">
+                                    <input type="button" id="updateProfileBtn" class="btn btn-primary waves-effect waves-light"
+                                    	value="확인" style="display: none;">
+                                    <input type="button" id="cancelBtn" class="btn btn-primary waves-effect waves-light"
+                                    	value="취소" style="display: none;">
+                                    </div>
+                                 </div>
+                              </div>
+						</div>
+					</div>
+					</form>
+				</div>
+				
+				
+				
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+
+
+
+<!-- ///////////////////////// modal -->
+<form id="updatePasswordForm" action="/student/updatePassword" method="post">
+	<div id="UpdatePasswordModal"
+		class="modal modal-edu-general default-popup-PrimaryModal fade"
+		role="dialog">
+
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-close-area modal-close-df">
+					<a class="close" data-dismiss="modal" href="#"> <i
+						class="fa fa-close"></i></a>
+				</div>
+				<div class="modal-body">
+					<div>
+					<h2>비밀번호 변경</h2>
+					<span id="firstPwChk" style="display: none;">*최초 1회 비밀번호 변경이 필요합니다.</span>
+					</div>
+					<br>
+					<div id="pwChk" class="alert alert-danger alert-mg-b" role="alert" style="display: none;">
+						
+					</div>
+					<div id="UpdatePasswordContainer">
+						<ul class="InputPassword">
+							<li><span>비밀번호</span> <input type="password" name="password"
+								id="password1" class="form-control"> <small
+								data-chk="dataChk">특수기호/영문가능</small></li>
+							<br>
+							<li><span>비밀번호 확인</span> <input type="password"
+								name="password2" id="password2" class="form-control"> <small
+								data-chk="dataChk">동일한 비밀번호를 입력해주세요</small></li>
+						</ul>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<a id="UpdatePasswordBtn" href="#">수정</a>
+					<a data-dismiss="modal" href="#">취소</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</form>

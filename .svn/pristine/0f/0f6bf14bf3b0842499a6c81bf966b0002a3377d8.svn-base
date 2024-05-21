@@ -1,0 +1,21 @@
+package kr.or.ddit.vo;
+
+import java.sql.Date;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import lombok.Data;
+
+@Data
+public class VoteNdQustnrVO {
+
+	private String voteQustnrCode;                  //투표 설문 코드
+	private String voteQustnrNm;                    //투표 설문 명
+	private String voteQustnrCn;                    //투표 설문 내용
+	@DateTimeFormat(pattern ="yyyy-MM-dd hh:mm:ss") 
+	private Date voteQustnrBeginDt;                 //투표 설문 시작 일시
+	@DateTimeFormat(pattern ="yyyy-MM-dd hh:mm:ss") 
+	private Date voteQustnrEndDt;                   //투표 설문 종료 일시
+	private String cmmnDetailCode;                  //공통 투표/설문 구분(A12)
+	private String nttCode;                         //게시물 코드
+}                                                   

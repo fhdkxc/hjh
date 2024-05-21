@@ -1,0 +1,29 @@
+package kr.or.ddit.admin.mapper;
+
+import java.util.List;
+
+import kr.or.ddit.vo.ClasAlbumVO;
+import kr.or.ddit.vo.CmmnDetailCodeVO;
+import kr.or.ddit.vo.SttemntSearchVO;
+import kr.or.ddit.vo.SttemntVO;
+
+public interface AdminMapper {
+
+	// 신고 게시판의 목록 개수를 구하는 메서드
+	public int getSttemntListTotal(SttemntSearchVO sttemntSearchVO);
+
+	// 신고 게시판의 목록을 가져오는 메서드
+	public List<SttemntSearchVO> loadSttemntList(SttemntSearchVO sttemntSearchVO);
+
+	// 신고 내용 목록을 불러오는 메서드
+	public List<CmmnDetailCodeVO> getComplaintCn();
+
+	// 신고된 게시물의 정보를 불러오는 메서드(반 앨범인 경우)
+	public ClasAlbumVO getClasAlbumInfo(String nttCode);
+
+	// 게시물의 공통 신고 상태 명을 불러오는 메서드
+	public String getCmmnSttemntCn(String string);
+
+	// 신고 게시물에 내용을 저장하는 메서드
+	public int addComplaint(SttemntVO sttemntVO);
+}

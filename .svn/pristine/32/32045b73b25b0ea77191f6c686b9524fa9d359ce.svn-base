@@ -1,0 +1,114 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="form" uri="http://www.springframework.org/tags/form" %>
+<script type="text/javascript" src="/resources/js/jquery.min.js"></script>
+<script type="text/javascript"></script>
+<script>
+const header = "${_csrf.headerName}";
+const token = "${_csrf.token}"; 
+
+$(function(){
+	let schulCode = "${nttVO.schulCode}";
+	
+	console.log("schulCode",schulCode);
+	
+	//게시글 등록
+	$("#createBtn").on("click",function(){
+		console.log("개똥!");
+		
+		//게시글 제목
+		let nttNm = $("#nttNm").val();
+		//게시글내용
+		let nttCn = $("#nttCn").val();
+		//첨부파일
+		let nttAtchFiles = $("#nttAtchFileCode")[0].files;  // input file은 jQuery가 해주는게 별로 없어서 바로 꺼내서 사용
+		
+		console.log("지은체킁1:",nttAtchFiles);
+
+		let fileCount = nttAtchFiles.length;
+
+
+				
+		let formData = new FormData();
+		formData.append("nttNm",nttNm);
+		formData.append("nttCn",nttCn);
+		formData.append("schulCode",schulCode);
+
+		/* if(fileCount != 0){
+			for(let i=0; i< fileCount; i++){
+				console.log("지으니체킁:",nttAtchFiles[i]);
+				formData.append("uploadFile",nttAtchFiles[i])
+			}
+		} */
+		
+		$.ajax({
+			url:"/school/dataRoomCreateAjax",
+			processData:false,
+			contentType:false,
+			data:formData,
+			type:"post",
+			dataType:"text",
+			beforeSend:function(xhr){
+				xhr.setRequestHeader(header,token);
+			},
+			success:function(result){				
+				console.log("result : ", result);
+				location.href = `/school/dataRoomDetail?schulCode=\${schulCode}&nttCode=\${result}`;
+			}
+		});
+		
+	});
+	
+	
+	$("#cancelBtn").on("click",function(){
+		location.href = "/school/dataRoom?schulCode="+schulCode;
+	}); //취소
+});
+
+function fileChange(pThis){
+	console.log("체킁:",document.querySelector('#append-small-btn'));
+	//document.querySelector('#append-small-btn').value = pThis.value;
+}
+
+
+
+</script>
+<div class="sparkline16-list responsive-mg-b-30">
+	<div class="sparkline16-hd">
+		<div class="main-sparkline16-hd">
+			<h1>자료실 게시글 등록</h1>
+		</div>
+	</div>
+	<!-- 폼 시작 -->
+	<form:form modelAttribute="nttVO" action="/school/dataRoomCreateAjax" method="post" 
+	enctype="multipart/form-data">
+	<div class="sparkline16-graph">
+		<div class="date-picker-inner">
+			<div class="form-group data-custon-pick" id="data_1">
+				<label>게시글 제목</label>
+				<div class="input-group date">
+					<form:input class="form-control" path="nttNm" />
+				</div>
+			</div>
+			<div class="form-group data-custon-pick" id="data_1">
+				<div class="input-group date">
+					<label>게시글 내용</label>
+					<form:textarea class="form-control" path="nttCn" style="resize: none; width: 100%;" />
+				</div>
+			</div>
+			<div class="input-group">
+				<label for="append-small-btn" style="margin-right: 10px;">첨부파일 등록</label>
+				<div class="input-group date">
+					<input type="text" name="append-small-btn" placeholder="no file selected" /> 
+						<input type="file" id="nttAtchFileCode" class="form-control" onchange="fileChange(this)" multiple />
+				</div>
+			</div>
+			<div class="col-md-10 text-right">
+				<button type="button" id="createBtn" class="btn btn-custon-rounded-two btn-primary">등록</button>
+				<button type="button" id="cancelBtn" class="btn btn-custon-rounded-two btn-default">취소</button>
+			
+			</div>
+		</div>
+	</div>
+	</form:form>
+</div>

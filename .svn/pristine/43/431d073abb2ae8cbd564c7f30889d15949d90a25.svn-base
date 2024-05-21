@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.dclz.mapper.DclzMapper">
+
+<!-- 학생 -->
+<resultMap type="dclzVO" id="stdMap">
+	<result property="clasStdntCode" column="CLAS_STDNT_CODE"/>
+	<result property="clasInNo" column="CLAS_IN_NO"/>
+	<result property="cmmnClasPsitnSttus" column="CMMN_CLAS_PSITN_STTUS"/>
+	<result property="clasCode" column="CLAS_CODE"/>
+	<result property="mberId" column="MBER_ID"/>
+	<result property="clasStdntJoinDate" column="CLAS_STDNT_JOIN_DATE"/>
+	<result property="clasStdntExitDate" column="CLAS_STDNT_EXIT_DATE"/>
+	<result property="mberNm" column="MBER_NM"/>
+	<collection property="dayList" resultMap="dayMap"></collection>
+</resultMap>
+<!-- 일자별 출결 정보 -->
+<resultMap type="dclzVO" id="dayMap">
+	<result property="atendDe" column="ATEND_DE"/>
+	<result property="cmmnDetailCode" column="CMMN_DETAIL_CODE"/>
+	<result property="dclzCmmnNm" column="DCLZ_CMMN_NM"/>
+	<collection property="timeList" resultMap="timeMap"></collection>
+</resultMap>
+<!-- 시간별 출결 정보 -->
+<resultMap type="dclzVO" id="timeMap">
+	<result property="dclzSn" column="DCLZ_SN"/>
+	<result property="dclzProcessTime" column="DCLZ_PROCESS_TIME"/>
+</resultMap>
+
+
+<!-- 학생 출석 -->
+<select id = "insertDclz" parameterType = "HashMap" statementType ="CALLABLE" resultType ="hashmap">
+	call proc_dclz_insert(#{clasStdntCode, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+					 	 ,#{sysdate, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+					 	 ,#{insert_cnt, mode=OUT, jdbcType=DECIMAL, javaType=int})
+</select>
+
+<!-- 마이바티스 프로시저 전용 get sysdate -->
+<select id ="getSysdate" resultType = "String">
+	select sysdate from dual
+</select>
+
+<!-- 출결 정보 get -->
+<select id = "getAllDclz" parameterType ="map" resultMap = "stdMap">
+	select 	cs.clas_stdnt_code,
+	        cs.clas_in_no,
+	        cs.cmmn_clas_psitn_sttus,
+	        cs.mber_id,
+	        cs.clas_stdnt_join_date,
+	        cs.clas_stdnt_exit_date,
+	        FN_CLAS_STDNT_CODE_TO_MBER_NM(cs.clas_stdnt_code) mber_nm,
+	        dc.atend_de,
+	        dc.cmmn_detail_code,
+	        FN_CMMN_CODE_TO_NM(dc.cmmn_detail_code) dclz_cmmn_nm,
+	        dc.dclz_sn,
+	        dc.dclz_process_time      
+	from  	dclz dc
+	        right join clas_stdnt cs
+	        on dc.clas_stdnt_code = cs.clas_stdnt_code
+	where 	cs.clas_code = #{clasCode}
+	<if test = "clasStdntCode != null and clasStdntCode != ''">
+	and 	cs.clas_stdnt_Code = #{clasStdntCode}
+	</if>
+	order by dc.atend_de, cs.clas_in_no, dc.dclz_sn
+</select>
+
+</mapper>

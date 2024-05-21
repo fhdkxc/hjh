@@ -1,0 +1,82 @@
+package kr.or.ddit.admin.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.admin.mapper.AdminMapper;
+import kr.or.ddit.admin.service.AdminService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.ClasAlbumVO;
+import kr.or.ddit.vo.CmmnDetailCodeVO;
+import kr.or.ddit.vo.SttemntSearchVO;
+import kr.or.ddit.vo.SttemntVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class AdminServiceImpl implements AdminService {
+	
+	@Autowired
+	AdminMapper adminMapper;
+
+	// 신고 게시판 목록을 출력하는 메서드
+	@Override
+	public ArticlePage<SttemntSearchVO> loadSttemntList(SttemntSearchVO sttemntSearchVO) {
+		log.info("loadSttemntList ServiceImpl sttemntSearchVO => " + sttemntSearchVO);
+		String keyword = sttemntSearchVO.getKeyword();
+		int currentPage = sttemntSearchVO.getCurrentPage();
+		int size = sttemntSearchVO.getSize();
+		
+		int sttemntTotal = this.adminMapper.getSttemntListTotal(sttemntSearchVO);
+		log.info("loadSttemntList ServiceImpl sttemntTotal => " + sttemntTotal);
+		
+		List<SttemntSearchVO> sttemntSearchVOList = this.adminMapper.loadSttemntList(sttemntSearchVO);
+		log.info("loadSttemntList ServiceImpl sttemntSearchVOList => " + sttemntSearchVOList);
+		
+		ArticlePage<SttemntSearchVO> sttemntPage = new ArticlePage<SttemntSearchVO>(currentPage, size, sttemntSearchVOList, keyword, sttemntTotal);
+		
+		return sttemntPage;
+	}
+
+	// 신고 내용 목록을 불러오는 메서드
+	@Override
+	public List<CmmnDetailCodeVO> getComplaintCn() {
+		List<CmmnDetailCodeVO> complaintCnList = this.adminMapper.getComplaintCn();
+		
+		return complaintCnList;
+	}
+
+	// 신고 내용을 저장하는 메서드
+	@Override
+	public int addComplaint(SttemntVO sttemntVO) {
+		
+		// 신고된 게시물의 정보를 불러오는 메서드
+		ClasAlbumVO clasAlbumVO = this.adminMapper.getClasAlbumInfo(sttemntVO.getNttCode());
+		log.info("addComplaint clasAlbumVO => " + clasAlbumVO);
+		
+		sttemntVO.setClasCode(clasAlbumVO.getClasCode());		// 반 코드
+		sttemntVO.setWrterId(clasAlbumVO.getMberId());			// 작성자 아이디
+			
+		sttemntVO.setCmmnSttemntProcessSttus("A21001");				// 초기 공통 신고 처리 상태를 미확인으로 설정
+		log.info("addComplaint sttemntVO => " + sttemntVO);
+		
+		int result = this.adminMapper.addComplaint(sttemntVO);
+		
+		return result;
+	}
+
+	// 상태를 변경하는 메서드
+	@Override
+	public int updateProcessSttus(Map<String, Object> map) {
+		// 신고 테이블의 신고 게시물 처리 상태를 변경하는 메서드(이상없음, 정지)
+		int result = this.adminMapper.updateProcessSttus(map);
+		
+		// 게시물이 변경되었다면 갤러리 게시물의 신고 상태를 변경 
+		if (result > 0) { this.adminMapper.changeTargetComplaintSttus(map); }
+		return result;
+	}
+
+}

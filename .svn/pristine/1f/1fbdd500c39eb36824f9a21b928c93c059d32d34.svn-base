@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.common.mapper.CommonMapper">
+	<!-- 로그인 시 아이디 유뮤 체크 -->
+	<resultMap type="memberVO" id="memberMap">
+		<result property="mberId" column="MBER_ID" />
+		<result property="password" column="PASSWORD" />
+		<result property="mberNm" column="MBER_NM" />
+		<result property="ihidnum" column="IHIDNUM" />
+		<result property="moblphonNo" column="MOBLPHON_NO" />
+		<result property="mberEmail" column="MBER_EMAIL" />
+		<result property="zip" column="ZIP" />
+		<result property="mberAdres" column="MBER_ADRES" />
+		<result property="mberImage" column="MBER_IMAGE" />
+		<result property="mberSecsnAt" column="MBER_SECSN_AT" />
+		<collection property="vwMemberAuthVOList"
+			resultMap="vwMemberAuthMap"></collection>
+	</resultMap>
+
+	<resultMap type="vwMemberAuthVO" id="vwMemberAuthMap">
+		<result property="mberId" column="MBER_ID" />
+		<result property="cmmnDetailCode" column="CMMN_DETAIL_CODE" />
+	</resultMap>
+	
+
+	<select id="loginChk" parameterType="String" resultMap="memberMap">
+		SELECT 
+		A.MBER_ID, 
+		A.PASSWORD, 
+		A.MBER_NM, 
+		A.IHIDNUM,
+		A.MOBLPHON_NO, 
+		A.MBER_EMAIL, 
+		A.ZIP, 
+		A.MBER_ADRES, 
+		A.MBER_IMAGE, 
+		A.MBER_SECSN_AT, 
+		B.CMMN_DETAIL_CODE
+		FROM MEMBER A LEFT OUTER JOIN VW_MEMBER_AUTH B
+		ON(A.MBER_ID = B.MBER_ID)
+		WHERE A.MBER_ID = TO_CHAR(#{username})
+	</select>
+
+
+	<!-- 회원가입시 아이디 중복체크 -->
+	<select id="idDupChk" resultType="int" parameterType="memberVO">
+		SELECT COUNT(*) FROM MEMBER WHERE MBER_ID = #{mberId}
+	</select>
+	<!-- 회원가입 -->
+	<insert id="signUp" parameterType="memberVO">
+		INSERT 
+		INTO 
+			MEMBER
+		VALUES(
+			#{mberId}
+			,#{password}
+			,#{mberNm}
+			,#{ihidnum}
+			,#{moblphonNo}
+			,#{mberEmail}
+			,#{zip}
+			,#{mberAdres}
+			,#{mberImage}
+			,0
+			,'ROLE_A01003')
+	</insert>
+	<!-- 학부모 회원가입시 자녀 아이디 체크 -->
+	<select id="childChk" resultType="int" parameterType="memberVO">
+		SELECT COUNT(*) FROM MEMBER WHERE MBER_ID = #{mberId} AND CMMN_DETAIL_CODE=#{cmmnDetailCode}
+	</select>
+	
+	<!-- 학부모 회원가입시 가족관계 선택할 수 있도록 가족관계 카테고리 호출 -->
+	<select id="familyCategory" resultType="CmmnDetailCodeVO">
+		SELECT * FROM CMMN_DETAIL_CODE WHERE CMMN_CODE = 'A04'
+	</select>
+	<!-- 학부모 회원가입시 가족관계에 학교코드 데이터를 넣을 수 있도록 학생(자녀)아이디로 학교코드 호출 -->
+	<select id="getSchulCode" resultType="String">
+		SELECT SCHUL_CODE FROM SCHUL_PSITN_MBER WHERE MBER_ID = #{mberChildId}
+	</select>
+	<!-- 학부모 회원가입시 가족관계 테이블에도 insert -->
+	<insert id="insertFamilyRelate" parameterType="familyRelateVO">
+		INSERT INTO FAMILY_RELATE VALUES(#{schulCode},#{stdntId},#{stdnprntId},#{cmmnDetailCode})
+	</insert>
+	
+</mapper>

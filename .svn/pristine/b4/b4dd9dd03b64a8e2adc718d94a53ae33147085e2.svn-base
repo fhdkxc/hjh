@@ -1,0 +1,118 @@
+package kr.or.ddit.common.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.common.service.HeaderService;
+import kr.or.ddit.vo.FamilyRelateVO;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.NoticeVO;
+import kr.or.ddit.vo.TaskVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/header")
+@Controller
+public class HeaderController {
+	
+	@Autowired
+	HeaderService headerService;
+	
+	// 학생, 교사의 클래스 코드 가져오기
+	@ResponseBody
+	@PostMapping("/getClasCode")
+	public String getClasCode(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("getClasCode -> memberVO: " + memberVO);
+		
+		String mberId = memberVO.getMberId();
+		
+		// 학생의 현재 소속된 클래스 코드 가져오기
+		String studentClasCode = headerService.getStudentClasCode(mberId);
+		log.info("getClasCode -> studentClasCode: " + studentClasCode);
+		
+		// 교사가 현재 운영 중인 클래스 코드 가져오기
+		String teacherClasCode = headerService.getTeacherClasCode(mberId);
+		log.info("getClasCode -> teacherClasCode: " + teacherClasCode);
+		
+		// null일 때 공백 처리
+		if(studentClasCode == null) studentClasCode = "";
+		if(teacherClasCode == null) teacherClasCode = "";
+		
+		String clasCode = studentClasCode + teacherClasCode;
+		log.info("getClasCode -> clasCode: " + clasCode);
+		
+		return clasCode;
+	}
+	
+	// 현재 소속된 학교 코드 찾기
+	@ResponseBody
+	@GetMapping("/getSchulCode")
+	public List<String> getSchulCode(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("getClasCode -> memberVO: " + memberVO);
+		
+		String mberId = memberVO.getMberId();
+		List<String> schulCodeList = headerService.getSchulCode(mberId);
+		log.info("getSchulCode -> schulCodeList: " + schulCodeList);
+		
+		return schulCodeList;
+	}
+	
+	// 모든 알림 불러오기
+	@ResponseBody
+	@PostMapping("/getAllNotice")
+	public List<NoticeVO> getAllNotice(HttpServletRequest request) {
+		MemberVO loginAccount = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("getAllNotice -> loginAccount: " + loginAccount);
+		
+		String mberId = loginAccount.getMberId();
+		
+		List<NoticeVO> noticeVOList = headerService.getAllNotice(mberId);
+		log.info("getAllNotice -> noticeVOList: " + noticeVOList);
+		
+		return noticeVOList;
+	}
+	
+	// 알림을 읽었을 때 알림 열람 여부 변경
+	@ResponseBody
+	@PostMapping("/updateNoticeReadngAt")
+	public int updateNoticeReadngAt(@RequestParam("noticeCode") String noticeCode) {
+		log.info("updateNoticeReadngAt -> noticeCode: " + noticeCode);
+		
+		int result = headerService.updateNoticeReadngAt(noticeCode);
+		log.info("updateNoticeReadngAt -> result: " + result);
+		
+		return result;
+	}
+	
+	// 학부모 자녀 리스트
+	@ResponseBody
+	@GetMapping("/childList")
+	public List<FamilyRelateVO> childList(HttpServletRequest request, Model model){
+		MemberVO loginAccount = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("childList -> loginAccount: " + loginAccount);
+		
+		String mberId = loginAccount.getMberId();
+		
+		List<FamilyRelateVO> childList = headerService.childList(mberId);
+		log.info("childList -> childList: " + childList);
+		
+		model.addAttribute("childList", childList);
+		
+		return childList;
+	}
+}
+
+

@@ -1,0 +1,31 @@
+package kr.or.ddit.approval.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import lombok.extern.slf4j.Slf4j;
+
+@RequestMapping("/approval")
+@Slf4j
+@Controller
+public class ApprovalController {
+	
+	//체험학습 신청서
+	@GetMapping("/fieldStudyApply")
+	public String fieldStudyApply() {
+		return "approval/fieldStudyApply";
+	}
+	
+	//체험학습 보고서
+	@GetMapping("/fieldStudyReport")
+	public String fieldStudyReport() {
+		return "approval/fieldStudyReport";
+	}
+	
+	//결석 신청
+	@GetMapping("/absentApply")
+	public String absentApply() {
+		return "approval/absentApply";
+	}
+}

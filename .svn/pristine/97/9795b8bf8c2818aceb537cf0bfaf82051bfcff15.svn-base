@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.classroom.mapper.NtcnMapper">
+	<sql id="searchWhere">
+		<if test="keyword != null and keyword != ''">
+			AND     N.NTCN_CN LIKE '%' || #{keyword} || '%'
+		</if>
+	</sql>
+
+	<resultMap type="ntcnVO" id="ntcnMap">
+		<result property="ntcnCode" column="NTCN_CODE"/>
+		<result property="ntcnWritngDt" column="NTCN_WRITNG_DT"/>
+		<result property="ntcnSj" column="NTCN_SJ"/>
+		<result property="ntcnCn" column="NTCN_CN"/>
+		<result property="clasCode" column="CLAS_CODE"/>
+		<result property="atchFileCode" column="ATCH_FILE_CODE"/>
+		<result property="ntcnCnt" column="NTCN_CNT"/>
+		<collection property="hrtchrVO" resultMap="hrtchrMap"></collection>
+		<collection property="atchFileVO" resultMap="atchFileMap"></collection>
+	</resultMap>
+	
+	<resultMap type="atchFileVO" id="atchFileMap">
+		<result property="atchFileCode" column="ATCH_FILE_CODE"/>
+		<result property="atchFileSn" column="ATCH_FILE_SN"/>
+		<result property="atchFileCours" column="ATCH_FILE_COURS"/>
+		<result property="atchFileNm" column="ATCH_FILE_NM"/>
+		<result property="atchFileTy" column="ATCH_FILE_TY"/>
+		<result property="atchFileDe" column="ATCH_FILE_DE"/>
+		<result property="registId" column="REGIST_ID"/>
+		<result property="updtDe" column="UPDT_DE"/>
+		<result property="updtId" column="UPDT_ID"/>
+	</resultMap>
+	
+	<resultMap type="hrtchrVO" id="hrtchrMap">
+		<result property="clasCode" column="CLAS_CODE"/>
+		<result property="schulCode" column="SCHUL_CODE"/>
+		<result property="mberId" column="MBER_ID"/>
+		<result property="mberNm" column="MBER_NM"/>
+		<result property="cmmnDetailCode" column="CMMN_DETAIL_CODE"/>
+	</resultMap>
+	
+	<!-- 알림장 리스트 -->
+	<select id="getNoticeList" parameterType="map" resultMap="ntcnMap">
+		SELECT      ROW_NUMBER() OVER(ORDER BY N.NTCN_CODE DESC) RNUM,
+		            N.NTCN_CODE, N.NTCN_WRITNG_DT, N.NTCN_SJ, N.NTCN_CN,
+		            N.CLAS_CODE, N.ATCH_FILE_CODE, N.NTCN_CNT,
+		            H.MBER_ID, FN_GET_MBER_NM(H.MBER_ID) AS MBER_NM
+		FROM        NTCN N
+		JOIN        HRTCHR H
+		ON          N.CLAS_CODE = H.CLAS_CODE
+		WHERE       N.CLAS_CODE = #{clasCode}
+		<include refid="searchWhere"></include>
+	</select>
+	
+	<!-- 알림장 첨부파일 리스트 -->
+	<select id="atchFileList" parameterType="String" resultType="atchFileVO">
+		SELECT      N.NTCN_CODE, N.ATCH_FILE_CODE,
+		            AF.ATCH_FILE_SN, AF.ATCH_FILE_COURS, AF.ATCH_FILE_NM
+		FROM        NTCN N
+		JOIN        HRTCHR H
+		ON          N.CLAS_CODE = H.CLAS_CODE
+		JOIN        ATCH_FILE AF
+		ON          AF.ATCH_FILE_CODE = N.ATCH_FILE_CODE
+		WHERE       N.NTCN_CODE = #{ntcnCode}
+		AND         N.ATCH_FILE_CODE IS NOT NULL
+	</select>
+	
+	<!-- 알림장 게시판 등록 -->
+	<insert id="ntcnInsert" parameterType="ntcnVO">
+		<selectKey resultType="String" order="BEFORE" keyProperty="ntcnCode">
+			SELECT 	#{clasCode}||
+					NVL(LPAD(MAX(SUBSTR(NTCN_CODE, -5)) + 1, 5, 0), '00001')
+			FROM 	NTCN
+			WHERE 	CLAS_CODE = #{clasCode}
+		</selectKey>
+		INSERT INTO NTCN
+			(NTCN_CODE, NTCN_WRITNG_DT, NTCN_CN, CLAS_CODE, ATCH_FILE_CODE, NTCN_CNT, NTCN_SJ)
+		VALUES
+			(
+			#{ntcnCode},
+			SYSDATE,
+			#{ntcnCn},
+			#{clasCode},
+			#{atchFileCode},
+			0,
+			#{ntcnSj}
+			)
+	</insert>
+	
+	<!-- 첨부파일 코드 구하기 -->
+	<select id="getAtchFileCode" parameterType="String" resultType="String">
+		SELECT 	#{clasCode}||
+				'NTC'||
+				NVL(LPAD((SUBSTR(MAX(ATCH_FILE_CODE), -5) + 1), 5, 0), '00001')
+		  FROM 	ATCH_FILE
+		 WHERE 	ATCH_FILE_CODE LIKE #{clasCode}||'NTC'||'%'
+	</select>
+	
+	<!-- 첨부파일 테이블 insert -->
+	<update id="atchFileInsert" parameterType="java.util.List">
+		<foreach collection="list" item="atchFileVO" open="INSERT ALL" close="SELECT * FROM DUAL" separator=" " index="idx">
+			INTO ATCH_FILE
+			(ATCH_FILE_CODE, ATCH_FILE_SN, ATCH_FILE_COURS, ATCH_FILE_NM,
+			 ATCH_FILE_TY, ATCH_FILE_DE, REGIST_ID, UPDT_DE, UPDT_ID)
+			VALUES
+			(#{atchFileVO.atchFileCode}, #{atchFileVO.atchFileSn},
+			 #{atchFileVO.atchFileCours}, #{atchFileVO.atchFileNm},
+			 #{atchFileVO.atchFileTy}, SYSDATE,
+			 #{atchFileVO.registId}, NULL, NULL)
+		</foreach>
+	</update>
+</mapper>

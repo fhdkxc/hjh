@@ -1,0 +1,19 @@
+package kr.or.ddit.common.mapper;
+
+import java.util.List;
+
+import kr.or.ddit.vo.NoticeVO;
+
+public interface HeaderMapper {
+	// (학생) 현재 소속된 클래스 코드 찾기
+	public String getStudentClasCode(String mberId);
+	
+	// (교사) 현재 운영 중인 클래스 코드 찾기
+	public String getTeacherClasCode(String mberId);
+	
+	// 모든 알림 불러오기
+	public List<NoticeVO> getAllNotice(String mberId);
+	
+	// 알림 열람 여부 변경
+	public int updateNoticeReadngAt(String noticeCode);
+}

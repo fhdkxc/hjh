@@ -1,0 +1,45 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>
+
+<sec:authorize access="hasRole('A01001')">
+	<div class="footer-copyright-area" style= "background: #ffd966e0;">
+	    <div class="container-fluid">
+	        <div class="row">
+	            <div class="col-lg-12">
+	                <div class="footer-copy-right">
+	                    <p style="color:#333;">Copyright © 2018. All rights reserved. Template by <a style="color:#333;" href="https://colorlib.com/wp/templates/">Colorlib</a></p>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+</sec:authorize>
+
+<sec:authorize access="hasRole('A01002')">
+	<div class="footer-copyright-area" style="background: rgb(0 0 0 / 82%);">
+	    <div class="container-fluid">
+	        <div class="row">
+	            <div class="col-lg-12">
+	                <div class="footer-copy-right">
+	                    <p>Copyright © 2018. All rights reserved. Template by <a href="https://colorlib.com/wp/templates/">Colorlib</a></p>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+</sec:authorize>
+
+<sec:authorize access="hasRole('A01003')">
+	<div class="footer-copyright-area" style="background: rgb(0 112 255 / 88%);box-shadow: 0 8px 32px 0 rgba( 31, 38, 135, 0.37 );backdrop-filter: blur( 4px );-webkit-backdrop-filter: blur( 4px );border: 1px solid rgba( 255, 255, 255, 0.18 );">
+	    <div class="container-fluid">
+	        <div class="row">
+	            <div class="col-lg-12">
+	                <div class="footer-copy-right">
+	                    <p>Copyright © 2018. All rights reserved. Template by <a href="https://colorlib.com/wp/templates/">Colorlib</a></p>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+</sec:authorize>

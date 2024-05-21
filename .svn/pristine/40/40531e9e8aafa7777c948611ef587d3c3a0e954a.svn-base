@@ -1,0 +1,70 @@
+package kr.or.ddit.common.controller;
+
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.common.service.HeaderService;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.NoticeVO;
+import kr.or.ddit.vo.TaskVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/header")
+@Controller
+public class HeaderController {
+	
+	@Autowired
+	HeaderService headerService;
+	
+	// 학생, 교사의 클래스 코드 가져오기
+	@ResponseBody
+	@PostMapping("/getClasCode")
+	public String getClasCode(HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("getClasCode -> memberVO: " + memberVO);
+		
+		String mberId = memberVO.getMberId();
+		
+		// 학생의 현재 소속된 클래스 코드 가져오기
+		String studentClasCode = headerService.getStudentClasCode(mberId);
+		log.info("getClasCode -> studentClasCode: " + studentClasCode);
+		
+		// 교사가 현재 운영 중인 클래스 코드 가져오기
+		String teacherClasCode = headerService.getTeacherClasCode(mberId);
+		log.info("getClasCode -> teacherClasCode: " + teacherClasCode);
+		
+		// null일 때 공백 처리
+		if(studentClasCode == null) studentClasCode = "";
+		if(teacherClasCode == null) teacherClasCode = "";
+		
+		String clasCode = studentClasCode + teacherClasCode;
+		log.info("getClasCode -> clasCode: " + clasCode);
+		
+		return clasCode;
+	}
+	
+	// 모든 알림 불러오기
+	@ResponseBody
+	@PostMapping("/getAllNotice")
+	public List<NoticeVO> getAllNotice(HttpServletRequest request) {
+		MemberVO loginAccount = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("getClasCode -> loginAccount: " + loginAccount);
+		
+		String mberId = loginAccount.getMberId();
+		
+		List<NoticeVO> noticeVOList = headerService.getAllNotice(mberId);
+		
+		return noticeVOList;
+	}
+}

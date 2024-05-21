@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.admin.mapper.AdminMapper">
+
+	<!-- 신고 게시판 목록 개수를 구하는 SELECT -->
+	<select id="getSttemntListTotal" parameterType="sttemntSearchVO" resultType="int">
+		/* kr.or.ddit.admin.mapper.AdminMapper.getSttemntListTotal */
+		SELECT 
+			COUNT(S.STTEMNT_CODE)
+		FROM 
+			STTEMNT S
+			LEFT JOIN NTT N ON (S.NTT_CODE = N.NTT_CODE)
+			LEFT JOIN CLAS_ALBUM CA ON (S.NTT_CODE = CA.CLAS_ALBUM_CODE)
+		WHERE 1 = 1
+	</select>
+	
+	<resultMap type="sttemntVO" id="loadSttemntListMap">
+		<result property="sttemntCode" column="STTEMNT_CODE"/>
+		<result property="schulCode" column="SCHUL_CODE"/>
+		<result property="clasCode" column="CLAS_CODE"/>
+		<result property="nttCode" column="NTT_CODE"/>
+		<result property="cmmnSttemntCn" column="CMMN_STTEMNT_CN"/>
+		<result property="cmmnSttemntCnNm" column="CMMN_STTEMNT_CN_NM"/>
+		<result property="wrterId" column="WRTER_ID"/>
+		<result property="sttemntId" column="STTEMNT_ID"/>
+		<result property="nttSe" column="NTT_SE"/>
+		<result property="cmmnSttemntProcessSttus" column="CMMN_STTEMNT_PROCESS_STTUS"/>
+		<result property="cmmnSttemntProcessSttusNm" column="CMMN_STTEMNT_PROCESS_STTUS_NM"/>
+		<result property="mngrId" column="MNGR_ID"/>
+	</resultMap>
+	
+	<!-- 신고 게시판 목록을 가져오는 SELECT -->
+	<select id="loadSttemntList" parameterType="sttemntSearchVO" resultMap="loadSttemntListMap">
+		/* kr.or.ddit.admin.mapper.AdminMapper.loadSttemntList */
+		WITH T AS (
+			SELECT
+					ROW_NUMBER() OVER (ORDER BY RES.STTEMNT_CODE DESC) RNUM
+				,	RES.*
+			FROM (
+					SELECT 
+					        S.STTEMNT_CODE      										/* 신고 코드 */
+					    ,   S.SCHUL_CODE        										/* 학교 코드 */
+					    ,   CA.CLAS_CODE        										/* 반 코드 */
+					    ,   S.NTT_CODE													/* 게시물 코드 */
+					    ,	S.CMMN_STTEMNT_CN   										/* 공통 신고 내용(A24) */       															
+					    ,   FN_CMMN_CODE_TO_NM(S.CMMN_STTEMNT_CN) CMMN_STTEMNT_CN_NM	/* 공통 신고 내용(A24) 이름 */
+					    ,   S.WRTER_ID   												/* 작성자 아이디 */
+					    ,   S.STTEMNT_ID           										/* 신고자 아이디 */
+					    ,	S.NTT_SE													/* 게시물 구분 */
+					    ,	S.CMMN_STTEMNT_PROCESS_STTUS								/* 공통 신고 처리 상태(A21) */
+					    ,   FN_CMMN_CODE_TO_NM(S.CMMN_STTEMNT_PROCESS_STTUS) CMMN_STTEMNT_PROCESS_STTUS_NM	/* 공통 신고 처리 상태(A21) 이름 */	
+					    ,   S.MNGR_ID           															/* 관리자 아이디 */
+					FROM STTEMNT S
+					LEFT JOIN NTT N ON (S.NTT_CODE = N.NTT_CODE)
+					LEFT JOIN CLAS_ALBUM CA ON (S.NTT_CODE = CA.CLAS_ALBUM_CODE)
+				) RES
+			)
+		SELECT T.*
+		FROM T
+		WHERE T.RNUM BETWEEN (#{currentPage}*#{size}) - (#{size}-1) AND (#{currentPage}*#{size})
+	</select>
+	
+	<!-- 신고 내용 목록을 불러오는 SELECT -->
+	<select id="getComplaintCn" resultType="cmmnDetailCodeVO">
+		/* kr.or.ddit.admin.mapper.AdminMapper.getComplaintCn */
+		SELECT 
+		        CMMN_DETAIL_CODE
+		    ,   CMMN_DETAIL_CODE_NM
+		FROM 
+		    CMMN_DETAIL_CODE CDC
+		WHERE 
+		    CMMN_CODE = 'A24'
+	</select>
+	
+	<resultMap type="clasAlbumVO" id="getClasAlbumInfoMap">
+		<result property="clasAlbumCode" column="CLAS_STDNT_CODE"/>
+		<result property="albumNm" column="ALBUM_NM"/>
+		<result property="clasCode" column="CLAS_CODE"/>
+		<result property="mberId" column="MBER_ID"/>
+		<result property="mberNm" column="MBER_NM"/>
+		<result property="albumDe" column="ALBUM_DE"/>
+		<result property="nttSttemntAccmlt" column="NTT_STTEMNT_ACCMLT"/>
+	</resultMap>
+	
+	<!-- 신고된 게시물의 정보를 불러오는 SELECT(반 앨범인 경우) -->
+	<select id="getClasAlbumInfo" parameterType="String" resultMap="getClasAlbumInfoMap">
+		/* kr.or.ddit.admin.mapper.AdminMapper.getClasAlbumInfo */
+		SELECT
+		        CA.CLAS_ALBUM_CODE											/* 반 앨범 코드 */
+		    ,   CA.ALBUM_NM													/* 앨범 명 */
+		    ,   CA.CLAS_CODE												/* 반 코드 */
+		    ,   CS.MBER_ID													/* 작성자 아이디 */
+		    ,   FN_CLAS_STDNT_CODE_TO_MBER_NM(CA.CLAS_STDNT_CODE) MBER_NM 	/* 반 학생 이름 */
+		    ,   CA.ALBUM_DE													/* 앨범 등록 일자 */
+		    ,   CA.NTT_STTEMNT_ACCMLT										/* 게시물 신고누적 */
+		FROM CLAS_ALBUM CA
+		LEFT JOIN CLAS_STDNT CS ON (CS.CLAS_STDNT_CODE = CA.CLAS_STDNT_CODE)
+		WHERE CA.ATCH_FILE_CODE = #{nttCode}
+	</select>
+	
+	<!-- 게시물의 공통 신고 상태 명을 불러오는 SELECT -->
+	<select id="getCmmnSttemntCn" parameterType="String" resultType="String">
+		SELECT
+			CMMN_DETAIL_CODE_NM
+		FROM 
+			CMMN_DETAIL_CODE
+		WHERE
+			CMMN_DETAIL_CODE = #{cmmnSttemnt}
+	</select>
+	
+	<insert id="addComplaint" parameterType="sttemntVO">
+		INSERT INTO STTEMNT (
+				STTEMNT_CODE					/* 신고 코드 */
+			,	CMMN_STTEMNT_CN					/* 공통 신고 내용(A24) */
+			,	CMMN_STTEMNT_PROCESS_STTUS		/* 공통 신고 처리 상태(A21) */
+			,	NTT_CODE						/* 게시물 코드 */
+			,	SCHUL_CODE						/* 학교 코드 */
+			,	WRTER_ID						/* 작성자 아이디 */
+			,	STTEMNT_ID						/* 신고자 아이디 */
+			,	MNGR_ID							/* 관리자 아이디 */
+			,	NTT_SE							/* 게시물 구분 */
+			,	CLAS_CODE						/* 반 코드 */
+		)
+		VALUES	(
+				STTEMNT_CODE_SEQ.NEXTVAL
+			,	#{cmmnSttemntCn}
+			,	#{cmmnSttemntProcessSttus}
+			,	#{nttCode}
+			,	#{schulCode, jdbcType = VARCHAR}
+			,	#{wrterId}
+			,	#{sttemntId}
+			,	#{mngrId, jdbcType = VARCHAR}
+			,	#{nttSe}
+			,	#{clasCode}
+		)
+	</insert>
+</mapper>

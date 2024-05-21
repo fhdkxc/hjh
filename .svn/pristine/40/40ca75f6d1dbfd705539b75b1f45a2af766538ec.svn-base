@@ -1,0 +1,24 @@
+package kr.or.ddit.classroom.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.classroom.mapper.NtcnMapper;
+import kr.or.ddit.classroom.service.NtcnService;
+import kr.or.ddit.vo.NtcnVO;
+
+@Service
+public class NtcnServiceImpl implements NtcnService {
+
+	@Autowired
+	NtcnMapper ntcnMapper;
+	
+	@Override
+	public List<NtcnVO> getNoticeList(Map<String, Object> map) {
+		return this.ntcnMapper.getNoticeList(map);
+	}
+
+}

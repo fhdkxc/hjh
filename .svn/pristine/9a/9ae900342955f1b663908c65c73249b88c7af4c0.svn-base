@@ -1,0 +1,14 @@
+package kr.or.ddit.util.mapper;
+
+import java.util.Map;
+
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.HrtchrVO;
+
+public interface CheckMapper {
+
+	ClasStdntVO checkBelongClStd(Map<String, Object> map);
+
+	HrtchrVO checkBelongClTch(Map<String, Object> map);
+
+}

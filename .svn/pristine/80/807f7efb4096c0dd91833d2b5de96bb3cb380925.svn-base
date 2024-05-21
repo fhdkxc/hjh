@@ -1,0 +1,549 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags"%>  
+<script type="text/javascript" src="/resources/js/jquery.min.js" ></script> 
+<!-- <script type="text/javascript" src="/resources/js/commonFunction.js" ></script> -->
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e03ac7f006917848896c4f551e98f356"></script>
+<link rel="stylesheet" href="/resources/css/mainPage.css">
+
+<style>
+#schoolMain {
+/* 	font-size: 1.2rem; */
+width :1400px;
+margin :auto;
+}
+
+#schoolMain h3, #schoolMain h2, #schoolMain h1 {
+	display:inline-block;
+}
+
+.header-box{
+	background-color: var(--blue-color);
+	color :white;
+}
+</style>
+
+<script>
+// 최초 로그인시 비밀번호 변경 요구
+const passwordChange = function(){
+    console.log("${USER_INFO}");
+    var password = "${USER_INFO.password}";
+    
+    var defaultPw = "$2a$10$z77PP1RfeUMJJFWY0p47Re2/wajq56UYywuzqGapxbRGMFDMeGZWG";
+    var updatePwMsg = "최초 1회 비밀번호 변경이 필요합니다. \n비밀번호를 변경하시겠습니까?";
+    
+    // 아이디에서 권한 추출하기
+    var authStr = "${memberVO.mberId}";
+    console.log("authStr: " + authStr);
+    var auth = authStr.charAt(7);
+    console.log("auth: " + auth);
+
+	var cmmnDetailCode = "";
+
+	if(auth == "0" && password == defaultPw){ // 학생인 경우
+		if(confirm(updatePwMsg)){
+			location.href = "/student/mypage";
+		}
+	}
+	
+	if(auth == "1" && password == defaultPw){ // 선생님인 경우
+	    if(confirm(updatePwMsg)){
+			location.href = "/teacher/mypage";
+		}
+	}
+}
+
+// 학교 정보 모달 초기화
+const schoolInfoModalInit = function(){
+	document.querySelector("#infoSchulNm").value = '${SCHOOL_INFO.schulNm}';
+	document.querySelector("#infoSchulAdres").value = '${SCHOOL_INFO.schulAdres}';
+	document.querySelector("#infoSchulTlphonNo").value = '${SCHOOL_INFO.schulTlphonNo}';
+	document.querySelector("#infoSchulAnnvrsry").value = modelDateFormat('${SCHOOL_INFO.schulAnnvrsry}');
+}
+
+// 학교 정보 버튼
+const schoolInfoBtn = function(){
+	console.log("classroomInfoBtn act");
+	$("#schoolInfoModal").modal('show');
+}
+
+// 학교 수정
+const modifySchool = function(){
+	console.log("modifySchool act");
+}
+
+// 학교 삭제
+const deleteSchool = function(){
+	console.log("deleteSchool act");
+}
+
+// 급식 정보
+const getMeals = function(){
+	$.ajax({
+		url:"/school/mainPageMeals",
+		method:"post",
+		dataType:"json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success:function(res){
+			console.log(" getMeals res:",res);
+			
+			let today = res[0];
+			let tomorrow = res[1];
+			
+			console.log("today:",today);
+			console.log("tomorrow:",tomorrow);
+			
+			if(today != null){
+				document.querySelector("#todayMeal").innerHTML = `<p>\${today.dietMenu}</p>`;
+			}
+			if(tomorrow != null){
+				document.querySelector("#tomorrowMeal").innerHTML = `<p>\${tomorrow.dietMenu}</p>`;
+			}
+		}
+	})
+}
+
+// 가입한 학교 목록
+const getClassList = function(){
+	$.ajax({
+		url:"/school/myClassList",
+		method:"post",
+		dataType:"json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success:function(res){
+			console.log("getClassList res:",res);
+			let isTch = false;		
+			<sec:authorize access ="hasRole('A01003')">
+			isTch = true;
+			</sec:authorize>
+			
+			let str = "";
+
+			res.forEach(function(cl, index){
+				
+				<sec:authorize access ="hasRole('A01003')">
+				cl.memberVO.forEach(function(mem, index){
+				</sec:authorize>
+					let childId = "";
+					<sec:authorize access ="hasRole('A01003')">
+					childId = `,'\${mem.mberId}'`;
+					</sec:authorize>
+					
+					str += 	`
+							<div class ="cl">
+							<div class = "clasBtn" style ="background-image:url('/resources/images/classRoom/class001.png')" onclick ="enterClass('\${cl.clasCode}'\${childId})">
+							</div>
+							<p>
+							`;
+					
+					<sec:authorize access ="hasRole('A01003')">
+					str += `\${mem.mberNm} 자녀의`;
+					</sec:authorize>
+					
+					str +=	`
+							\${cl.cmmnDetailCodeVO.cmmnDetailCodeNm}학년 \${cl.clasNm}</p>
+							</div>
+							`;
+					
+					if(index==5){
+						alert("그만.");
+					}
+				<sec:authorize access ="hasRole('A01003')">
+				})
+				</sec:authorize>
+			});
+			$("#clsContainer").prepend(str);
+		},
+		error:function(request, status, error){
+			console.log("code: " + request.status)
+	        console.log("message: " + request.responseText)
+	        console.log("error: " + error);
+		}
+	})
+}
+
+// 학사일정
+const getSchoolScheduleList = function(){
+	$.ajax({
+		url:"/school/scheduleList",
+		data:{schulCode:'${SCHOOL_INFO.schulCode}'},
+// 		contentType:"application/json; charset=utf-8",
+		method:"get",
+		dataType:"json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success:function(res){
+			console.log("getSchoolScheduleList() res:",res);
+			
+			let str ="";
+			
+			res.forEach(function(con){
+				str += `<p><span style ="font-weight:700;">[\${dateFormat(con.scheduleBgnde)} ~ \${dateFormat(con.scheduleEndde)}]</span>
+						<br>		
+						\${con.scheduleNm}
+						</p>`;
+			})
+			
+			if(str == ""){
+				str =`<p>
+				 	   등록된 일정이 없습니다.
+				 	   </p>`
+			}
+			
+			document.querySelector("#schoolSchedule").innerHTML = str;
+		}
+	});
+}
+
+// 자료실
+const getDataRoomList = function(){
+	let sendData = {"schulCode":'${SCHOOL_INFO.schulCode}',
+					"currentPage":"1"};
+	
+	$.ajax({
+		url:"/school/dataRoomAjax",
+		data:JSON.stringify(sendData),
+		contentType:"application/json; charset=utf-8",
+		method:"post",
+		dataType:"json",
+		beforeSend:function(xhr){
+			xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
+		},
+		success:function(res){
+// 			console.log("getDataRoomList() res:",res);
+			
+			let str ="";
+			let schulCode = "${SCHOOL_INFO.schulCode}";
+			
+			res.content.forEach(function(con){
+				str += `<tr class ="d-tr" onclick ="location.href ='/school/dataRoomDetail?schulCode=\${schulCode}&nttCode=\${con.nttCode}'">
+						<td style ="padding-left: 30px;">\${dateFormat(con.nttWritngDt)}</td>
+						<td>\${con.nttNm}</td>
+						</tr>`;
+			})
+			
+			if(str == ""){
+				str =`<tr>
+					  <td colspan = "100%" style ="text-align:center;">
+				 	    등록된 게시물이 없습니다.
+				 	  </td>
+				 	  </tr>`
+			}
+			
+			document.querySelector("#dataRoomTb tbody").innerHTML = str;
+		}
+	});
+}
+
+// 교육부
+const getEduInfo = function(){
+	var data = {
+		"keyword":"",
+		"currentPage":1,
+		"size":10
+	}
+
+	$.ajax({
+        url: "/school/edcInfoListAjax",
+        type: "post",
+        data: JSON.stringify(data),
+        contentType: "application/json;charset=utf-8",
+        dataType: "json",
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader("${_csrf.headerName}", "${_csrf.token}");
+        },
+        success: function(res) {
+        	str ="";
+        	
+//         	console.log("getEduInfo res:",res);
+        	
+        	res.content.forEach(function(con){
+				str += `<tr class ="d-tr" onclick ="window.open('\${con.edcInfoNttUrl}'), '_blank'">
+						<td style ="padding-left: 30px;">\${con.edcInfoNttWritngDt}</td>
+						<td>\${cutStr(con.edcInfoNttNm, 40)}</td>
+						</tr>`;
+        	})
+			
+			if(str == ""){
+				str =`<tr>
+					  <td colspan = "100%" style ="text-align:center;">
+				 	    등록된 게시물이 없습니다.
+				 	  </td>
+				 	  </tr>`
+			}
+
+        	document.querySelector("#eduInfoTb tbody").innerHTML = str;
+        } // fn.ajax.success
+	}); // fn.ajax
+} // fn
+
+// 클릭한 학급클래스 입장
+const enterClass = function(clasCode, childId){
+	document.querySelector("#clasCode").value=clasCode;
+	if(childId != null){
+		document.querySelector("#childId").value=childId;
+	}
+	document.querySelector("#goToClassForm").submit();
+}
+
+
+// 지도 api
+const initMap = function(){
+	let schNm = "${SCHOOL_INFO.schulNm}";
+	let y = 36.450701;
+	let x = 127.270667;
+	
+	$.ajax({
+		url:"https://dapi.kakao.com/v2/local/search/keyword.json",
+		contentType:"application/json; charset=UTF-8;",
+		data:{"query":schNm},
+		headers: {"Authorization":"KakaoAK ed3b8c773b19e104fc3ab5f2ce2e548c"},
+		method:"get",
+		dataType:"json",
+		async:false,
+		success:function(res){
+			console.log("initMap res:",res);
+			
+			res.documents.forEach(function(item){
+				if(item.place_name == schNm){
+					x = item.x;
+					y = item.y;
+					return false;
+				}
+			})
+		}
+	})
+	
+	var container = document.getElementById('map'); //지도를 담을 영역의 DOM 레퍼런스
+	var options = { //지도를 생성할 때 필요한 기본 옵션
+		center: new kakao.maps.LatLng(y, x), //지도의 중심좌표.
+		level: 4 //지도의 레벨(확대, 축소 정도)
+	};
+
+	var map = new kakao.maps.Map(container, options); //지도 생성 및 객체 리턴
+	
+	var marker = new kakao.maps.Marker({ 
+	    // 지도 중심좌표에 마커를 생성합니다 
+	    position: map.getCenter() 
+	}); 
+	// 지도에 마커를 표시합니다
+	marker.setMap(map);
+	
+	var iwContent = '<div style="width:150px; text-align :center; padding:5px 0px; margin:auto; font-size:1.1rem;"><a href="https://map.kakao.com/link/map/${SCHOOL_INFO.schulNm},'+y+','+x+'" target="_blank">${SCHOOL_INFO.schulNm}</a></div>', // 인포윈도우에 표출될 내용으로 HTML 문자열이나 document element가 가능합니다
+    iwPosition = new kakao.maps.LatLng(33.450701, 126.570667); //인포윈도우 표시 위치입니다
+
+	// 인포윈도우를 생성합니다
+	var infowindow = new kakao.maps.InfoWindow({
+	    position : iwPosition, 
+	    content : iwContent 
+	});
+	  
+	// 마커 위에 인포윈도우를 표시합니다. 두번째 파라미터인 marker를 넣어주지 않으면 지도 위에 표시됩니다
+	infowindow.open(map, marker); 
+}
+
+window.onload = function(){
+	
+// 	passwordChange(); 			// 최초 로그인시 비밀번호 변경 요구
+	getMeals(); 				// 급식 정보
+	getClassList(); 			// 가입한 학교 목록
+	getSchoolScheduleList(); 	// 학사일정 목록
+	getDataRoomList(); 			// 자료실 목록
+	getEduInfo(); 				// 교육부
+	initMap(); 					// 지도 api
+	schoolInfoModalInit(); 		// 학교 정보 모달 초기화
+}
+</script>
+
+<form id="goToClassForm" action="/class/classMain" method="post">
+	<input type="hidden" id="clasCode" name="clasCode" value="">
+	<input type="hidden" id="childId" name="childId" value="">
+	<sec:csrfInput />
+</form>
+
+<div id ="schoolMain">
+
+	<div class = "hor-div" style ="height:100px">
+		<div class ="box header-box" style ="display :flex; align-items: center; justify-content: center; padding-top:0px; padding-bottom: 0px;">
+			<img src = "/resources/images/school/school001.png" style =" margin:auto 0px; width:50px; height:50px"  onclick ="schoolInfoBtn()">
+			<h1 class = "" style ="margin:auto 0px;" onclick ="schoolInfoBtn()">${SCHOOL_INFO.schulNm}</h1>
+		</div>
+	</div>
+	<div class ="hor-div" style ="height:350px">
+		<div class ="box" style="width:33%; position: relative;">
+<!-- 			<img src ="/resources/images/school/school001.png" style ="position: absolute; bottom:15px; right: 30px; z-index: 5; width:250px; height:250px; opacity:0.1;margin:auto 0px;"> -->
+			<div class = "headComment"style="font-size:1.3rem; order: 10;">가입한 반</div>	
+			<div id ="clsContainer" style ="order: 10;">
+				<div class = "cl">
+					<div class ="clasBtn" style ="background-image:url('/resources/images/school/plus001.png')" onclick = "location.href ='/school/schoolList'">
+					</div>
+					<p>반 가입하기</p>
+				</div>
+			</div>
+		</div>
+		<div style ="width:44%; display:flex; margin:0px 12px;">
+			<div class ="box" style="width:50%;margin-left:0px; ">
+				<div class = "inner-box2" style ="background-color: #FFE6CB;">
+					<div class ="head-div">
+						<span class = "headComment">급식</span>
+<!-- 						<a class="follow-cards" href="#" -->
+<!-- 							id="goToTaskList">➤바로 가기</a> -->
+					</div>
+					<div class = "ver-div" style ="height:85%;">
+						<div class = "inner-box" style="height:50%;">
+							<div class="subHeadComment">오늘</div>
+							<div id = "todayMeal" class = "con">
+								<p>등록된 급식 정보가 없습니다...</p>
+							</div>
+						</div>
+						<div class = "inner-box" style="height:50%;">
+							<div class="subHeadComment">내일</div>
+							<div id = "tomorrowMeal" class="con">
+								<p>등록된 급식 정보가 없습니다...</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class ="box" style="width:50%; margin-right:0px;">
+				<div class ="inner-box2" style ="background-color: #E2FDE0;">
+					<div class ="head-div">
+						<span class = "headComment">학사 일정</span>
+<!-- 						<a class="follow-cards" href="/school/calendar" -->
+<!-- 							id="goToTaskList">➤바로 가기</a> -->
+					</div>
+					<div id = "schoolSchedule"  class = "con inner-box">
+						<p>[2024-04-04]<br> 운동회운동회운동회운동회</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class ="box" style="width:22%;">
+			<div class = "headComment" style ="font-size:1.3rem;">빠른 메뉴</div>
+			<div class = "ver-div grid" style ="height:85%; align-items: center;">
+				<div class ="hor-div" style ="height:50%; justify-content: center; align-items:flex-end;">
+					<div class ="menuBtn" onclick ="location.href =''">
+						<img src ="/resources/images/school/food001.png">
+						<p>급식</p>
+					</div>
+					<div class ="menuBtn" onclick ="location.href ='/school/calendar'">
+						<img src ="/resources/images/school/schedule001.png">
+						<p>학사 일정</p>
+					</div>
+				</div>
+				<div class ="hor-div" style ="height:50%; justify-content: center; align-items:flex-start; ">
+					<div class ="menuBtn" onclick ="location.href ='/school/dataRoom?schulCode=${SCHOOL_INFO.schulCode}'">
+						<img src ="/resources/images/school/book001.png">
+						<p>자료실</p>
+					</div>
+					<div class ="menuBtn" onclick ="location.href ='/afterSchool?schulCode=${SCHOOL_INFO.schulCode}'">
+						<img src ="/resources/images/school/paper001.png">
+						<p>방과후학교</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class ="hor-div" style ="height:350px">
+		<div class ="tb-box"  style ="width:33%;">
+			<div class ="head-div" style="margin:15px 15px 0px 15px;">
+				<span class = "headComment">자료실</span>
+<!-- 				<a class="follow-cards" href="/school/dataRoom" -->
+<!-- 					id="">➤바로 가기</a> -->
+			</div>
+			<div class="product-status-wrap" style="position: relative; padding :0px;">
+				<div class="asset-inner">
+					<table id ="dataRoomTb">
+						<thead>
+							<tr>
+								<th style ="padding-left: 30px;">날짜</th>
+								<th>제목</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+		</div>
+		<div class ="tb-box"   style ="width:44%;">
+			<div class ="head-div" style="margin:15px 15px 0px 15px;">
+				<span class = "headComment">교육부 소식</span>
+<!-- 				<a class="follow-cards" href="/school/eduInfo" -->
+<!-- 					id="goToTaskList">➤바로 가기</a> -->
+			</div>
+			<div class= "con" style ="padding :0px;">
+				<div class="product-status-wrap" style="position: relative; padding :0px;">
+					<div class="asset-inner">
+						<table id="eduInfoTb">
+							<thead>
+								<tr>
+									<th style ="padding-left: 30px;">날짜</th>
+									<th>제목</th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class ="box" style ="width:22%;">
+			<div class = "inner-box2" style ="background-color: #F4E6FF;">	
+				<div class = "headComment">학교 위치</div>
+				<div id="map" style="width:100%;height:80%;border-radius:20px; box-shadow: 0px 0px 15px 1px #00000018"></div>
+			</div>
+		</div>
+	</div>
+	<div style="height:80px"></div>
+</div>
+
+<!-- 학겨 정보 modal -->
+<div id="schoolInfoModal"
+	class="modal modal-edu-general default-popup-PrimaryModal fade"
+	role="dialog">
+
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-close-area modal-close-df">
+				<a class="close" data-dismiss="modal" href="#"> <i
+					class="fa fa-close"></i></a>
+			</div>
+			<div class="modal-body">
+				<h3>학교 정보</h3>
+				<div class="product-status-wrap drp-lst overflow-scroll" style ="padding : 0px">
+					<div class = "modal-body-line">
+						<label for = "infoSchulNm">학교 명</label>
+						<input type = "text" id = "infoSchulNm" value =""  disabled/>
+					</div>
+					<div class = "modal-body-line">
+						<label for = "infoSchulAdres">학교 주소</label>
+						<input type = "text" id = "infoSchulAdres" value ="" disabled/>
+					</div>
+					<div class = "modal-body-line">
+						<label for = "infoSchulTlphonNo">연락처</label>
+						<input type = "text" id = "infoSchulTlphonNo" value ="" disabled />
+					</div>
+					<div class = "modal-body-line">
+						<label for = "infoSchulAnnvrsry">설립일</label>
+						<input type = "text" id = "infoSchulAnnvrsry" value ="" disabled/>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<sec:authorize access ="hasRole('A14001')">
+				<button onclick="modifySchool()" class = "mf-btn d-btn-blue">수정</button>
+				<button onclick="deleteSchool()" class = "mf-btn d-btn-red">삭제</button>
+				</sec:authorize>
+				<button data-dismiss="modal" class = "mf-btn d-btn-gray">닫기</button>
+			</div>
+		</div>
+	</div>
+</div>

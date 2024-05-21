@@ -1,0 +1,77 @@
+package kr.or.ddit.approval.service.impl;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.approval.mapper.ApprovalMapper;
+import kr.or.ddit.approval.service.ApprovalService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.vo.SanctnDocSearchVO;
+import kr.or.ddit.vo.SanctnDocVO;
+import kr.or.ddit.vo.VwStdntStdnprntVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class ApprovalServiceImpl implements ApprovalService {
+	
+	@Autowired
+	ApprovalMapper approvalMapper;
+	
+	//교외체험학습 관련 학부모와 학생의 정보
+	@Override
+	public VwStdntStdnprntVO studentInfo(VwStdntStdnprntVO vwStdntStdnprntVO) {
+		return this.approvalMapper.studentInfo(vwStdntStdnprntVO);
+	}
+	
+	//체험학습 신청서 등록
+	@Override
+	public int insertDoc(SanctnDocVO sanctnDocVO) {
+		return this.approvalMapper.insertDoc(sanctnDocVO);
+	}
+	
+	//학부모-체험학습 문서 목록 데이터
+	@Override
+	public ArticlePage<SanctnDocVO> loadSanctnDocList(SanctnDocSearchVO sanctnDocSearchVO) {
+		log.info("loadSanctnDocList->sanctnDocSearchVO전 : " + sanctnDocSearchVO);
+		String clasStdntCode = sanctnDocSearchVO.getClasStdntCode();
+		String keyword = sanctnDocSearchVO.getKeyword();
+		int currentPage = sanctnDocSearchVO.getCurrentPage();
+		int size = sanctnDocSearchVO.getSize();
+		
+		log.info("loadSanctnDocList->sanctnDocSearchVO후 : " + sanctnDocSearchVO);
+		
+		//학부모-체험학습 문서 갯수 
+		int total = this.approvalMapper.getApprovalTotal(sanctnDocSearchVO);
+		log.info("loadSanctnDocList->total : " + total);
+		
+		List<SanctnDocVO> sanctnDocVOList = this.approvalMapper.loadSanctnDocList(sanctnDocSearchVO);
+		log.info("loadSanctnDocList->sanctnDocVOList : " + sanctnDocVOList);
+		
+//		ArticlePage<SanctnDocVO> sanctnDocPage = new ArticlePage<SanctnDocVO>(total, size, keyword, clasStdntCode, sanctnDocVOList, currentPage);
+		ArticlePage<SanctnDocVO> sanctnDocPage = new ArticlePage<SanctnDocVO>(total, currentPage, size, sanctnDocVOList, keyword, clasStdntCode);
+		log.info("loadSanctnDocList->sanctnDocPage : " + sanctnDocPage);
+		return sanctnDocPage;
+	}
+	
+	//학부모-체험학습 문서 목록 상세
+	@Override
+	public SanctnDocVO approvalDetail(String docCode) {
+		return this.approvalMapper.approvalDetail(docCode);
+	}
+
+	//학부모-체험학습 문서 수정
+	@Override
+	public int approvalUpdate(SanctnDocVO sanctnDocVO) {
+		return this.approvalMapper.approvalUpdate(sanctnDocVO);
+	}
+	
+	//학부모-체험학습 문서 삭제
+	@Override
+	public int approvalDelete(SanctnDocVO sanctnDocVO) {
+		return this.approvalMapper.approvalDelete(sanctnDocVO);
+	}
+	
+}

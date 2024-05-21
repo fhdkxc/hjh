@@ -1,0 +1,24 @@
+package kr.or.ddit.classroom.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.AtchFileVO;
+import kr.or.ddit.vo.NtcnVO;
+
+public interface NtcnMapper {
+	// 알림장 목록 가져오기
+	public List<NtcnVO> getNoticeList(Map<String, Object> map);
+	
+	// 알림장 게시판 등록
+	public int ntcnInsert(NtcnVO ntcnVO);
+	
+	// 첨부파일코드 구하기
+	public String getAtchFileCode(String clasCode);
+	
+	// 첨부파일 테이블 insert
+	public int atchFileInsert(List<AtchFileVO> atchFileVOList);
+	
+	// 첨부파일 리스트
+	public List<AtchFileVO> atchFileList(String ntcnCode);
+}

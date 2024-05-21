@@ -1,0 +1,225 @@
+package kr.or.ddit.classroom.service.impl;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.classroom.mapper.ClassroomMapper;
+import kr.or.ddit.classroom.service.ClassroomService;
+import kr.or.ddit.vo.AtchFileVO;
+import kr.or.ddit.vo.ClasAlbumVO;
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.ClasVO;
+import kr.or.ddit.vo.GcVO;
+import kr.or.ddit.vo.HrtchrVO;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.QuesVO;
+import kr.or.ddit.vo.SchulPsitnMberVO;
+import kr.or.ddit.vo.TaskVO;
+import kr.or.ddit.vo.UnitEvlVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+public class ClassroomServiceImpl implements ClassroomService{
+	
+	@Autowired
+	ClassroomMapper classroomMapper;
+	
+	@Autowired
+	String uploadFolder;
+	
+	// 학급 클래스 메인: 해당 클래스의 담임 교사 정보
+	@Override
+	public HrtchrVO clasInfoSelect(String clasCode) {
+		return this.classroomMapper.clasInfoSelect(clasCode);
+	}
+	
+	//학급클래스 소속회원 목록
+	@Override
+	public String classMemberList() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	// 결석 사유 신청(체험학습도)
+	@Override
+	public String absentReason() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//자유 게시판 목록 
+	@Override
+	public String freeBoard() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//투표/설문조사 게시판 목록
+	@Override
+	public String votingSurvey() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//알림장 목록
+	@Override
+	public String notice() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//과제 게시판 목록
+	@Override
+	public List<TaskVO> taskList(Map<String, Object> map) {
+		return this.classroomMapper.taskList(map);
+	}
+	
+	//과제 게시판 총 목록
+	@Override
+	public int getTotalTask(String clasCd) {
+		return this.classroomMapper.getTotalTask(clasCd);
+	}
+
+	//단원마무리 게시판 목록
+	@Override
+	public String unitTest() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//학급 시간표 조회
+	@Override
+	public String schedule() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//온라인 수업
+	@Override
+	public String onlineClass() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//생활 기록부 조회
+	@Override
+	public String lifeRecord() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	// 학급클래스(반) 목록 개수 조회
+	@Override
+	public int classroomGetTotal(Map<String, Object> map) {
+		return this.classroomMapper.classroomGetTotal(map);
+	}
+
+	// 학급클래스(반) 목록
+	@Override
+	public List<ClasVO> classroomList(Map<String, Object> map) {
+		return this.classroomMapper.classroomList(map);
+	}
+	
+	// 교사 학교명 가져오기 
+	@Override
+	public SchulPsitnMberVO getSchoolNm(SchulPsitnMberVO schulPsitnMberVO) {
+		return this.classroomMapper.getSchoolNm(schulPsitnMberVO);
+	}
+
+	// 클래스 생성
+	@Override
+	public int classCreateAjax(ClasVO clasVO) {
+		return this.classroomMapper.classCreateAjax(clasVO);
+	}
+	
+	//클래스 담당 교사 등록
+	@Override
+	public int hrtchrCreate(ClasVO clasVO) {
+		HrtchrVO hrtchrVO = clasVO.getHrtchrVO();
+		return this.classroomMapper.hrtchrCreate(hrtchrVO);
+	}
+	
+
+	//학교 -> 학급클래스 목록
+	@Override
+	public List<ClasVO> classList(Map<String, Object> map) {
+		return this.classroomMapper.classList(map);
+	}
+	//학교 소속 클래스 총 개수
+	@Override
+	public int classListGetTotal(Map<String, Object> map) {
+		return this.classroomMapper.classListGetTotal(map);
+	}
+
+	//클래스 생성 전 중복체크
+	@Override
+	public int classDupCheck(ClasVO clasVO) {
+		log.debug("여기오삼: {}",clasVO);
+		return this.classroomMapper.classDupCheck(clasVO);
+	}
+
+	//클래스 가입시 학교 코드 가져오기
+	@Override
+	public String selectSchulCode(String clasCode) {
+		return this.classroomMapper.selectSchulCode(clasCode);
+	}
+
+	//클래스 가입신청
+	@Override
+	public int classJoinReqAjax(ClasStdntVO clasStdntVO) {
+		return this.classroomMapper.classJoinReqAjax(clasStdntVO);
+	}
+
+	//클래스 가입신청 목록
+	@Override
+	public List<ClasStdntVO> classJoinReqListAjax(Map<String, Object> map) {
+		return this.classroomMapper.classJoinReqListAjax(map);
+	}
+
+	//클래스 가입 신청 총 개수
+	@Override
+	public int classJoinReqGetTotal(Map<String, Object> map) {
+		return this.classroomMapper.classJoinReqGetTotal(map);
+	}
+
+	//클래스 가입신청 처리
+	@Override
+	public int classJoinAjax(ClasStdntVO clasStdntVO) {
+		return this.classroomMapper.classJoinAjax(clasStdntVO);
+	}
+	//가입신청 중복체크
+	@Override
+	public int classJoinDupCheck(ClasStdntVO clasStdntVO) {
+		return this.classroomMapper.classJoinDupCheck(clasStdntVO);
+	}
+
+	//클래스 가입신청 취소
+	@Override
+	public int classJoinReqCancelAajx(ClasStdntVO clasStdntVO) {
+		return this.classroomMapper.classJoinReqCancelAajx(clasStdntVO);
+	}
+
+	//구성원 목록
+	@Override
+	public List<ClasStdntVO> classMberListAjax(Map<String, Object> map) {
+		return this.classroomMapper.classMberListAjax(map);
+	}
+
+	//학생 상세정보
+	@Override
+	public MemberVO classStudDetailAjax(String mberId) {
+		return this.classroomMapper.classStudDetailAjax(mberId);
+	}
+
+}

@@ -1,0 +1,11 @@
+package kr.or.ddit.classroom.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import kr.or.ddit.vo.NtcnVO;
+
+public interface NtcnMapper {
+	// 알림장 목록 가져오기
+	public List<NtcnVO> getNoticeList(Map<String, Object> map);
+}

@@ -1,0 +1,493 @@
+package kr.or.ddit.classroom.controller;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.classroom.service.ClassroomService;
+import kr.or.ddit.util.ArticlePage;
+import kr.or.ddit.util.service.SessionService;
+import kr.or.ddit.vo.ChldrnClasVO;
+import kr.or.ddit.vo.ClasStdntVO;
+import kr.or.ddit.vo.ClasVO;
+import kr.or.ddit.vo.HrtchrVO;
+import kr.or.ddit.vo.MemberVO;
+import kr.or.ddit.vo.SchulPsitnMberVO;
+import kr.or.ddit.vo.TaskVO;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequestMapping("/class")
+@Controller
+public class ClassroomController {
+
+	@Autowired
+	ClassroomService classroomService;
+	@Autowired
+	SessionService sessionService;
+	
+	// 학급클래스 메인
+	@PostMapping("/classMain")
+	public String main(HttpServletRequest request, Model model,
+			@RequestParam(value = "clasCode", required = false) String clasCode) {
+		log.info("main -> clasCode: " + clasCode);
+		
+		// 세션에 저장된 회원의 아이디 가져오기
+		MemberVO loginAccount = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		log.info("loginAccount -> " + loginAccount);
+		
+		// 학급 클래스 입장 시 클래스 정보 세션에 저장
+		sessionService.setClassSession(request, clasCode);
+		
+		// 세션에 저장된 클래스 정보 가져오기
+		ClasVO clasVO = (ClasVO) request.getSession().getAttribute("CLASS_INFO");
+		log.info("CLAS_INFO -> " + clasVO);
+		
+		// 해당 클래스의 담임 교사 정보 가져 오기
+		HrtchrVO hrtchrVO = classroomService.clasInfoSelect(clasVO.getClasCode());
+		log.info("main -> hrtchrVO: " + hrtchrVO);
+		
+		model.addAttribute("clasCode", clasVO.getClasCode());
+		model.addAttribute("hrtchrVO", hrtchrVO);
+		request.setAttribute("hrtchrVO", hrtchrVO);
+
+		return "class/classMain";
+	}
+	
+	//학급클래스 소속회원 목록
+	@GetMapping("/memberList")
+	public String classMemberList() {
+		return "class/memberList";
+	}
+	
+	// 결석 사유 신청(체험학습도)
+	@GetMapping("/absentReason")
+	public String absentReason() {
+		return "class/absentReason";
+	}
+	
+	
+	//자유 게시판 목록 
+	@GetMapping("/freeBoard")
+	public String freeBoard() {
+		return "class/freeBoard";
+	}
+	
+	//투표/설문조사 게시판 목록
+	@GetMapping("/votingSurvey")
+	public String votingSurvey() {
+		return "class/votingSurvey";
+	}
+	
+	
+	//알림장 목록
+	@GetMapping("/notice")
+	public String notice() {
+		return "class/notice";
+	}
+	
+	//과제 게시판 목록
+	/*
+	 요청URI : /class/taskList
+	 요청파라미터 : 
+	 요청방식 : get
+	 */
+	@GetMapping("/taskList")
+	public String taskList(Model model
+			,@RequestParam(value="currentPage",required=false,defaultValue="1") int currentPage
+			,@RequestParam(value="keyword",required=false,defaultValue="") String keyword) {
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		log.info("map: " + map);
+		
+		map.put("currentPage",currentPage);
+		map.put("keyword",keyword);
+		
+		List<TaskVO> taskVOList = this.classroomService.taskList(map);
+		log.info("taskVOList: " + taskVOList);
+		
+		model.addAttribute("taskVOList", taskVOList);
+		
+		return "class/task";
+	}
+	
+	//과제 게시판 목록(Ajax)
+	//요청URI : /class/taskList?currentPage=2&keyword=
+	//요청파라미터 : currentPage=2&keyword= 또는 ...
+	@ResponseBody
+	@RequestMapping(value="/taskListAjax", method=RequestMethod.POST)
+	public ArticlePage<TaskVO> taskListAjax(@RequestBody Map<String,Object> map) {
+		//map: {currentPage=1, keyword=}
+		log.info("taskListAjax->map: " + map);
+		
+		
+		//map{"currentPage":"1","keyword":""}
+		List<TaskVO> taskVOList = this.classroomService.taskList(map);
+		log.info("taskVOList: " + taskVOList);
+		
+		int total = this.classroomService.getTotalTask("OJ20240101");
+		int size = 10;
+		
+		int currentPage =  Integer.parseInt(map.get("currentPage").toString());
+		String keyword = map.get("keyword").toString();
+		
+		ArticlePage<TaskVO> data = new ArticlePage<TaskVO>(total, currentPage, size, taskVOList, keyword);
+		String url = "/class/taskList";
+		data.setUrl(url);
+		
+		return data;
+	}
+	
+	//학급 시간표 조회
+	@GetMapping("/schedule")
+	public String schedule() {
+		return "class/schedule";
+	}
+	
+	//온라인 수업
+	@GetMapping("/onlineClass")
+	public String onlineClass() {
+		return "class/onlineClass";
+	}
+	
+	//생활 기록부 조회
+	@GetMapping("/lifeRecord")
+	public String lifeRecord() {
+		return "class/lifeRecord";
+	}
+	
+	/** 학급클래스(반) 목록 불러오기 */
+	@ResponseBody
+	@PostMapping("/classroomListAjax")
+	public ArticlePage<ClasVO> classroomListAjax(@RequestBody(required = false) Map<String, Object> map) {
+		
+		// 키값 설정
+		String keyword = "";
+		if (map.get("keyword") == null) {
+			keyword = "";
+		} else {
+			keyword = map.get("keyword").toString();
+		}
+		int currentPage = Integer.parseInt(map.get("currentPage").toString());
+		int size = Integer.parseInt(map.get("size").toString());
+		
+		// 총 데이터 갯수 가져오기
+		int classroomTotal = this.classroomService.classroomGetTotal(map);
+		log.info("classroomListAjax -> total : " + classroomTotal);
+		log.info("String.valueOf(total) : "  + String.valueOf(classroomTotal));
+		
+		// 학급클래스(반) 목록 가져오기
+		List<ClasVO> clasVOList = this.classroomService.classroomList(map);
+		log.info("clasVOList => "+ clasVOList);
+		
+		// 페이지네이션
+		ArticlePage<ClasVO> data = new ArticlePage<ClasVO>(classroomTotal, currentPage, size, clasVOList, keyword);
+		
+		return data;
+	}
+	
+	//클래스 생성 페이지
+	@GetMapping("/classCreate")
+	public String classCreate(@RequestParam(value="schulCode")String schulCode, Model model, SchulPsitnMberVO schulPsitnMberVO, HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		
+		//로그인 한 회원 아이디를 가져옴
+		schulPsitnMberVO.setMberId(memberVO.getMberId());
+		schulPsitnMberVO = this.classroomService.getSchoolNm(schulPsitnMberVO);
+	    log.info("schulPsitnMberVO==>" + schulPsitnMberVO);
+	    model.addAttribute("schulPsitnMberVO", schulPsitnMberVO);
+	    return "class/classCreate";
+	}
+	
+	//클래스 생성
+	@ResponseBody
+	@PostMapping("/classCreateAjax")
+	public int classCreateAjax(@RequestBody ClasVO clasVO, HttpServletRequest request) {
+		log.info("clasVO->:" +clasVO );
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		
+		/*
+		ClasVO(clasCode=null, clasNm=12, clasYear=2024, cmmnGrade=A22002, cmmnGradeNm=null
+		, cmmnClasSttus=null, cmmnClasSttusNm=null, schulCode=7581092, rnum=0, schulVO=null
+		, cmmnDetailCodeVO=null, memberVO=null, schulNm=null, cmmnDetailCodeNm=null, hrtchrVO=null)
+		 */
+		log.info("clasVOclasVO->:" +clasVO );
+		
+		//클래스 생성 전 중복체크
+		int dupCnt = classroomService.classDupCheck(clasVO);
+		log.info("classCreateAjax->dupCnt:" +dupCnt);
+		
+		if(dupCnt>0) {//중복됨
+			return 0;//실패
+		}else {//중복안됨
+			int result = this.classroomService.classCreateAjax(clasVO);
+			log.info("인서트 후 ->:" +clasVO );
+			
+			//2) HRTCHR 테이블에 insert
+			HrtchrVO hrtchrVO = new HrtchrVO();
+			hrtchrVO.setSchulCode(clasVO.getSchulCode());
+			hrtchrVO.setClasCode(clasVO.getClasCode());
+			
+			hrtchrVO.setMberId(memberVO.getMberId());
+		
+			clasVO.setHrtchrVO(hrtchrVO);
+			log.info("getMberId->:" +memberVO.getMberId() );			
+			log.info("result : " +result);
+			result += this.classroomService.hrtchrCreate(clasVO);
+			return 1;//성공
+		}
+		
+	}
+
+
+	//학급클래스 목록
+	@GetMapping("/classList")
+	public String classList(Map<String,Object> map, 
+			 @RequestParam(value="schulCode", required=true) String schulCode,
+			 @RequestParam(value="currentPage", required=false, defaultValue="1")int currentPage) {
+		 map.put("currentPage", currentPage);
+	     map.put("schulCode", schulCode);
+	     
+	    List<ClasVO> clasVOList = this.classroomService.classList(map);
+		
+	    log.info("nttVOList>>" + clasVOList);
+	    
+	    return "class/classList";
+	}
+	
+	
+	//학급클래스 목록 ajax
+	@ResponseBody
+	@PostMapping("/classListAjax")
+	public ArticlePage<ClasVO> classListAjax(@RequestBody(required=false) Map<String,Object> map) {
+		//map!! : {schulCode=7581092, keyword=1학년, currentPage=1, cmmnClasSttusNm=전체}
+		log.info("map!! : " + map);
+		//키값 설정
+		String schulCode = (String)map.get("schulCode");
+		
+		log.info("schulCode!!" + schulCode);
+		List<ClasVO> clasVOList = this.classroomService.classList(map);
+		String currentPage = map.get("currentPage").toString();
+		log.info("currentPage!! : " + currentPage);
+		log.info("list->clasVOList : " + clasVOList);
+		
+		 String keyword = "";
+	      if (map.get("keyword") == null) {
+	    	  keyword = "";
+	      } else {
+	    	  keyword = map.get("keyword").toString();
+	      }
+	      log.info("dataRoomAjax->keyword : " + keyword);
+//			      String keyword = map.get("keyword").toString();
+		
+	    //총 갯수
+	    int size = 10;
+		int total = this.classroomService.classListGetTotal(map);
+		log.info("list->total : " + total);
+		
+		log.info("dataRoomAjax->keyword : " + keyword);
+      
+		ArticlePage<ClasVO> data = new ArticlePage<ClasVO>(total, Integer.parseInt(currentPage), size, clasVOList, keyword, schulCode);
+		String url = "/class/classList";
+		data.setUrl(url);
+      
+      return data;
+	}
+	
+	//클래스 가입시 학교 코드 가져오기
+	@ResponseBody
+	@PostMapping("/selectSchulCode")
+	public String selectSchulCode(@RequestBody ClasVO clasVO) {
+		String schulCode = classroomService.selectSchulCode(clasVO.getClasCode());
+		log.info("schulCode-> " + schulCode);
+		return schulCode;
+	}
+		
+	//클래스 가입요청
+	@ResponseBody
+	@PostMapping("/classJoinReqAjax")
+	public int classJoinReqAjax(@RequestBody ClasStdntVO clasStdntVO, HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		clasStdntVO.setMberId(memberVO.getMberId());
+		/*
+		clasStdntVO-> ClasStdntVO(clasStdntCode=null, clasInNo=44, cmmnStdntClsf=null, cmmnClasPsitnSttus=null
+		, clasCode=null, schulCode=7581092, mberId=test01, cmmnClasPsitnSttusNm=null, cmmnStdntClsfNm=null, memberVOList=null, clasVOList=null, clasVO=null)
+		 */
+		log.info("clasStdntVO-> " + clasStdntVO);
+		int result = classroomService.classJoinReqAjax(clasStdntVO);
+		log.info("인서트 후 clasStdntVO-> " + clasStdntVO);
+		log.info("result->",result);
+		return result;
+	}
+	
+	//클래스 가입신청 목록
+	@GetMapping("/classJoinReqList")
+	public String classJoinReqList() {
+		return "class/classJoinReqList";
+	}
+	
+	//클래스 가입신청 목록
+	@ResponseBody
+	@PostMapping("/classJoinReqListAjax")
+	public  ArticlePage<ClasStdntVO> classJoinReqListAjax(@RequestBody(required=false) Map<String,Object> map) {
+		
+		String schulCode = (String)map.get("schulCode");
+		String clasCode = (String)map.get("clasCode");
+		log.info("schulCode->"+schulCode);
+		
+		List<ClasStdntVO> ClasStdntVOList = this.classroomService.classJoinReqListAjax(map);
+		String currentPage = map.get("currentPage").toString();
+		log.info("currentPage!! : " + currentPage);
+		log.info("ClasStdntVOList {}",ClasStdntVOList);
+		
+		int size = 10;
+		int total = this.classroomService.classJoinReqGetTotal(map);
+		log.info("list->total : " + total);
+		
+		ArticlePage<ClasStdntVO> data = new ArticlePage<ClasStdntVO>(total, Integer.parseInt(currentPage), size, ClasStdntVOList, schulCode, clasCode);
+      
+		return data;
+	}
+	
+	//클래스 가입신청 처리
+	@ResponseBody
+	@PostMapping("/classJoinAjax")
+	public int classJoinAjax(@RequestBody(required=false) ClasStdntVO clasStdntVO) {
+		
+		log.info("야호!");
+		log.info("clasStdntVO!"+clasStdntVO);
+		/*
+		 clasStdntVO!ClasStdntVO(clasStdntCode=null, clasInNo=0, cmmnStdntClsf=null, 
+		 cmmnClasPsitnSttus=A03101, clasCode=OJ20240101, schulCode=7581092, mberId=ruby, 
+		 clasStdntJoinDate=null, clasStdntExitDate=null, rnum=0, mberNm=null, grade=null, 
+		 cmmnClasPsitnSttusNm=null, cmmnStdntClsfNm=null, schulNm=null, memberVOList=null, 
+		 clasVOList=null, clasVO=null)
+		 */
+		
+//			String cmmnClasPsitnSttus = clasStdntVO.getCmmnClasPsitnSttus();
+//			String mberId = clasStdntVO.getMberId();
+		Date clasStdntJoinDate = clasStdntVO.getClasStdntJoinDate();
+		log.info("clasStdntJoinDate~~"+clasStdntJoinDate);
+		
+//			log.info("mberId!"+mberId);
+//			log.info("cmmnClasPsitnSttus!"+cmmnClasPsitnSttus);
+		int result = classroomService.classJoinAjax(clasStdntVO);
+		log.info("result값"+result);
+		log.info("classJoinAjax->result"+result);
+		
+		return result;
+	}
+	
+	//클래스 내 회원목록
+	@GetMapping("/classMberList")
+	public String classMberList() {
+		return "class/classMberList";
+	}
+	
+	//학생 구성원 목록
+	@ResponseBody
+	@PostMapping("/classStudListAjax")
+	public ArticlePage<ClasStdntVO> classStudListAjax(@RequestBody(required=false) Map<String,Object> map) {
+		String schulCode = (String)map.get("schulCode");
+		String clasCode = (String)map.get("clasCode");
+		log.info("schulCode->"+schulCode);
+		
+		List<ClasStdntVO> ClasStdntVOList = this.classroomService.classStudListAjax(map);
+		
+		String currentPage = map.get("currentPage").toString();
+		log.info("currentPage!! : " + currentPage);
+		log.info("ClasStdntVOList {}",ClasStdntVOList);
+		
+		int size = 10;
+		int total = this.classroomService.classStudGetTotal(map);
+		log.info("list->total : " + total);
+		
+		ArticlePage<ClasStdntVO> data = new ArticlePage<ClasStdntVO>(total, Integer.parseInt(currentPage), size, ClasStdntVOList, schulCode, clasCode);
+		return data;
+	}
+	
+	//구성원 상세정보
+	@ResponseBody
+	@PostMapping("/classMberDetailAjax")
+	public MemberVO classMberDetailAjax(@RequestBody Map<String, String> map) {
+		
+		String mberId = (String)map.get("mberId");
+		log.info("mberId!@!!!"+mberId);
+		
+		MemberVO memberVO = this.classroomService.classMberDetailAjax(mberId);
+		log.info("memberVOList랍니다"+memberVO);
+		
+		return memberVO;
+	}
+	
+	//초대코드 보내기
+	@ResponseBody
+	@PostMapping("/classMailSend")
+	public String classMailSend(@RequestBody Map<String, Object> memberVO) {
+		//데이터 추출
+		 List<String> mberIds = (List<String>) memberVO.get("mberIds"); // 값을 List형식으로 가져오기
+		 String clasCode = (String) memberVO.get("clasCode"); // 값을 String형식으로 가져오기
+
+			log.info("mberIds->"+mberIds);
+			log.info("clasCode->"+clasCode);
+			
+		//이메일 값 가져오기
+		List<String> mberEmail = this.classroomService.getEmailByMemberId(mberIds,clasCode);
+		 
+			log.info("도착!!->"+mberEmail);
+		return "success";
+	}
+	
+	//초대코드로 가입하기
+	@ResponseBody
+	@PostMapping("/classInvCodeJoin")
+	public int classInvCodeJoin(@RequestBody ChldrnClasVO chldrnClasVO, HttpServletRequest request) {
+		MemberVO memberVO = (MemberVO) request.getSession().getAttribute("USER_INFO");
+		chldrnClasVO.setMberId(memberVO.getMberId());
+		log.info("chldrnClasVO!!!! {}" , chldrnClasVO);
+		
+		//학부모 클래스 소속 중복체크
+		int classDupCnt = this.classroomService.classDupCnt(chldrnClasVO);
+		log.info("classDupCnt~~ {}", classDupCnt);
+		return classDupCnt;
+	}  
+	
+	//학부모 구성원 목록
+	@ResponseBody
+	@PostMapping("/classParentListAjax")
+	public ArticlePage<ChldrnClasVO> classParentListAjax(@RequestBody(required=false) Map<String,Object> map) {
+		String clasCode = (String)map.get("clasCode");
+		log.info("clasCode->"+clasCode);
+		
+		List<ChldrnClasVO> ChldrnClasVOList = this.classroomService.classParentListAjax(map);
+		
+		String currentPage = map.get("currentPage").toString();
+		log.info("currentPage!! : " + currentPage);
+		log.info("ClasStdntVOList {}",ChldrnClasVOList);
+		
+		int size = 10;
+		
+		int total = this.classroomService.classPrentGetTotal(map);
+		log.info("list->total : " + total);
+		
+		ArticlePage<ChldrnClasVO> data = new ArticlePage<ChldrnClasVO>(total, Integer.parseInt(currentPage), size, ChldrnClasVOList, clasCode);
+		return data;
+	}
+	
+}
+
+

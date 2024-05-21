@@ -1,0 +1,10 @@
+package kr.or.ddit.common.service.impl;
+
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.common.service.HeaderService;
+
+@Service
+public class HeaderServiceImpl implements HeaderService {
+
+}
