@@ -406,29 +406,27 @@ const headerEnterClass = function(){
             xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
          },
          success:function(clasStdntVO){
-            // 소속된 클래스가 있는 경우
-            if(clasStdntVO.clasCode != null && clasStdntVO.clasCode != ""){
-               var cmmnSchulPsitnSttus = "${SCHOOL_USER_INFO.cmmnSchulPsitnSttus}";
-               
-               // 재학 중이고, 가입된 반이 있는 경우
-               if(cmmnSchulPsitnSttus == "A02101" && clasStdntVO.cmmnClasPsitnSttus == "A03101"){
-                  $("#headerClasCode").val(clasStdntVO.clasCode);
+            if(clasStdntVO == null){
+            	Swal.fire('현재 소속된 클래스가 없습니다.', '', 'error');
+                return;
+            }
+            
+            var cmmnSchulPsitnSttus = "${SCHOOL_USER_INFO.cmmnSchulPsitnSttus}";
+            
+            // 재학 중이고, 가입된 반이 있는 경우
+            if(cmmnSchulPsitnSttus == "A02101" && clasStdntVO.cmmnClasPsitnSttus == "A03101"){
+               $("#headerClasCode").val(clasStdntVO.clasCode);
 
-                  // 학급 클래스로 이동
-                  $("#goToClassForm").submit();
-               // 가입 대기 중인 경우
-               }else if(clasStdntVO.cmmnClasPsitnSttus == "A03001"){
-                  Swal.fire('아직 가입 대기 상태입니다.', '가입이 승인될 때까지 조금만 기다려 주세요.', 'warning');
-                  return;
-               }else{
-                  Swal.fire('현재 소속된 클래스가 없습니다.', '', 'error');
-                  return;
-               }
-            // 소속된 클래스가 없는 경우
+               // 학급 클래스로 이동
+               $("#goToClassForm").submit();
+            // 가입 대기 중인 경우
+            }else if(clasStdntVO.cmmnClasPsitnSttus == "A03001"){
+               Swal.fire('아직 가입 대기 상태입니다.', '가입이 승인될 때까지 조금만 기다려 주세요.', 'warning');
+               return;
             }else{
                Swal.fire('현재 소속된 클래스가 없습니다.', '', 'error');
                return;
-            } // end if
+            }
          } // end success
       }) // end ajax
    </sec:authorize>
@@ -444,8 +442,6 @@ const headerEnterClass = function(){
          xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
       },
       success:function(clasCode){
-         console.log("clasCode -> " + clasCode);
-         
          // 소속된 클래스가 있는 경우
          if(clasCode != null && clasCode != ""){
             var cmmnSchulPsitnSttus = "${SCHOOL_USER_INFO.cmmnSchulPsitnSttus}";
@@ -482,8 +478,6 @@ const headerEnterClass = function(){
          xhr.setRequestHeader("${_csrf.headerName}","${_csrf.token}");
       },
       success:function(res){
-         console.log("자녀 리스트", res);
-   
          var str = "";
          var clasCode = "";       // 학생, 교사의 클래스 코드
 //          var clasCodeArr = [];    // 학부모 자녀의 클래스 코드들
@@ -498,7 +492,7 @@ const headerEnterClass = function(){
             str += "<p>"+item.clasVO.clasNm+"</p>"
             str += "<p>"+item.clasVO.clasCode+"</p>"
             str += "</div>";
-            str += "<input type='button' onclick='goToClass(\"" + item.clasVO.clasCode + "\", \"" + schulVOList.stdntId + "\")' class='btn btn-primary waves-effect waves-light' value='이동하기'>";
+            str += "<input type='button' onclick='parentsGoToClass(\"" + item.clasVO.clasCode + "\", \"" + schulVOList.stdntId + "\")' class='btn btn-primary waves-effect waves-light' value='이동하기'>";
             str += "</div></div>";
             
             $("#clasCode1").val(item.clasVO.clasCode);
@@ -510,9 +504,8 @@ const headerEnterClass = function(){
    </sec:authorize>
 };
 
-const goToClass = function(clasCode, childId){
-   console.log("clasCode: " + clasCode);
-   
+// (학부모 권한) 자녀의 학급 클래스 페이지로 이동
+const parentsGoToClass = function(clasCode, childId){
    if(childId != null){
       document.querySelector("#childId").value = childId;
    }
